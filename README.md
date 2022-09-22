@@ -11,7 +11,7 @@ Hence, we provide ways to get data instead.
 All datasets are assumed to be in "data" folder. 
 
 1. Toy Dataset: We have created toy dataset to test algorithms promptly. [train_X.csv](data/toy/train_X.csv) contains periodic sine waves. [test_X.csv](data/toy/train_X.csv) has abnormal situations (zero signal) and anomalies are labeled in file [test_y.csv](data/toy/test_y.csv).  
-2. SWaT and WADI (https://itrust.sutd.edu.sg/itrust-labs_datasets/dataset_info/): SWaT and WADI dataset has two types of data: train (normal) and test (abnormal).
+2. SWaT (https://itrust.sutd.edu.sg/itrust-labs_datasets/dataset_info/): SWaT and WADI dataset has two types of data: train (normal) and test (abnormal).
 Train set does not contain anomaly set. Test set has anomalies driven by researcher's attack scenarios.
 3. *TO BE UPDATED*
 

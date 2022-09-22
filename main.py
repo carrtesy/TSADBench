@@ -4,7 +4,8 @@ import os
 import numpy as np
 
 from tqdm import tqdm
-from data.load_data import load_data, load_anomaly_intervals
+#from data.load_data import load_data
+from data.load_data import DataFactory
 from data.dataset import data_provider
 from Exp.Trainer import USAD_Trainer, MAE_Trainer, IsolationForest_Trainer
 from metrics import get_statistics
@@ -25,6 +26,7 @@ parser.add_argument("--window_size", type=int, required=False, default=12, help=
 parser.add_argument("--epochs", type=int, required=False, default=30, help=f"epochs to run")
 parser.add_argument("--load_pretrained", action="store_true", help=f"whether to load pretrained version")
 parser.add_argument("--exp_id", type=str, default="test")
+parser.add_argument("--scaler", type=str, default="std")
 
 ### save
 parser.add_argument("--checkpoints", type=str, default="./checkpoints")
@@ -50,6 +52,7 @@ MAE_parser.add_argument("--anomaly_reduction_mode", type=str, default="mean")
 args = parser.parse_args()
 args.checkpoint_path = os.path.join(args.checkpoints, f"{args.exp_id}")
 args.output_path = os.path.join(args.outputs, f"{args.exp_id}")
+args.home_dir = "."
 os.makedirs(args.checkpoint_path, exist_ok=True)
 os.makedirs(args.output_path, exist_ok=True)
 args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -59,11 +62,9 @@ print("done.")
 # 2. Data
 print("=" * 30)
 print(f"Preparing {args.dataset} dataset...")
-train_x, train_y, test_x, test_y = load_data(args.dataset)
-
-args.input_dim = train_x.shape[1]
-
-train_dataset, train_loader, test_dataset, test_loader = data_provider(train_x, train_y, test_x, test_y, window_size=args.window_size, dataset_type=args.dataset)
+datafactory = DataFactory(args)
+train_dataset, train_loader, test_dataset, test_loader = datafactory()
+args.input_dim = train_dataset.x.shape[1]
 
 # 3. Model
 print("=" * 30)
@@ -88,6 +89,6 @@ for epoch in epochs:
     result = trainer.infer(test_dataset, test_loader)
     f1 = result["f1"]
     if best_result is None or f1 > best_result["f1"]:
-        print(f"Saving best results @epoch{epoch}: f1{f1}")
+        print(f"Saving best results @epoch{epoch} => f1 score:{f1}")
         best_result = result
         trainer.checkpoint(os.path.join(args.checkpoint_path, f"best.pth"))
