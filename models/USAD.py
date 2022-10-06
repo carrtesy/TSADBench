@@ -50,3 +50,5 @@ class USAD(nn.Module):
         z = self.encoder(x)
         AE1_out, AE2_out = self.decoder1(z), self.decoder2(z)
         return AE1_out, AE2_out
+
+

@@ -33,6 +33,7 @@ class DataFactory:
                                                                               window_size=self.args.window_size,
                                                                               dataset_type=self.args.dataset,
                                                                               batch_size=self.args.batch_size,
+                                                                              eval_batch_size=self.args.eval_batch_size,
                                                                               shuffle=False,
                                                                               scaler=self.args.scaler)
         return train_dataset, train_loader, test_dataset, test_loader
@@ -44,6 +45,7 @@ class DataFactory:
                 window_size,
                 dataset_type,
                 batch_size,
+                eval_batch_size,
                 shuffle,
                 scaler):
 
@@ -63,7 +65,7 @@ class DataFactory:
                                                    window_size=window_size)
         test_dataloader = DataLoader(
             dataset=test_dataset,
-            batch_size=batch_size,
+            batch_size=eval_batch_size,
             shuffle=False
         )
         return train_dataset, train_dataloader, test_dataset, test_dataloader

@@ -9,3 +9,7 @@ def SEED_everything(SEED):
     torch.backends.cudnn.benchmark = False
     np.random.seed(SEED)
     random.seed(SEED)
+
+def set_requires_grad(model, val):
+    for p in model.parameters():
+        p.requires_grad = val
