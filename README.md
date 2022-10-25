@@ -27,10 +27,15 @@ Request via guidelines in the [link](https://itrust.sutd.edu.sg/itrust-labs_data
 - For Attack Dataset, refer to ./WADI_14days_new.csv
 
 SMD, PSM, SMAP, MSL are provided in https://github.com/thuml/Anomaly-Transformer.
+
 4. SMD : Server Machine Dataset
+
 5. PSM : Pooled Server Metrics Dataset
+
 6. SMAP : Soil Moisture Active Passive satellite Dataset
+
 7. MSL : Mars Science Laboratory Dataset
+
 8. To be updated
 
 ## Anomaly detection models
