@@ -7,17 +7,31 @@ This repository contains time series anomaly detection datasets, models, and the
 
 For list of dataset details, please refer to our [notion dataset page](https://decorous-background-e3e.notion.site/79cb1d595ec746a3a4c8371cedb2c608?v=440fdfeea2dc489d806e72b85d3d4da6). 
 
-We don't have rights to publicly distribute dataset we get.
-
-Hence, we provide ways to get data instead. 
-
 All datasets are assumed to be in "data" folder. 
 
 1. Toy Dataset (toyUSW) : We have created toy dataset to test algorithms promptly. [train.npy](data/toyUSW/train.npy) contains periodic sine waves. [test.npy](data/toyUSW/test.npy) has abnormal situations (stopped signal) and anomalies are labeled in file [test_label.npy](data/toyUSW/test_label.npy).  
-2. SWaT (https://itrust.sutd.edu.sg/itrust-labs_datasets/dataset_info/): SWaT and WADI dataset has two types of data: train (normal) and test (abnormal).
-Train set does not contain anomaly set. Test set has anomalies driven by researcher's attack scenarios.
-3. *TO BE UPDATED*
 
+SWaT and WADI dataset has two types of data: train (normal) and test (abnormal).
+Train set does not contain anomaly set. Test set has anomalies driven by researcher's attack scenarios.
+Request via guidelines in the [link](https://itrust.sutd.edu.sg/itrust-labs_datasets/dataset_info/).
+
+2. SWaT (2022-10-25) : Secure Water Treatment Dataset
+- With shared google drive link after request, refer to *SWaT.A1 & A2_Dec 2015*
+- For Normal Dataset, refer to ./Physical/SWaT_Dataset_Normal_v0.xlsx
+- For Attack Dataset, refer to ./Physical/SWaT_Dataset_Attack_v0.xlsx
+- convert xlsx using *read_xlsx_and_convert_to_csv* in utils/tools.py
+
+3. WADI (2022-10-25) : Water Distribution Dataset
+- With shared google drive link after request, refer to *WADI.A2_19 Nov 2019*
+- For Normal Dataset, refer to ./WADI_attackdataLABLE.csv
+- For Attack Dataset, refer to ./WADI_14days_new.csv
+
+SMD, PSM, SMAP, MSL are provided in https://github.com/thuml/Anomaly-Transformer.
+4. SMD : Server Machine Dataset
+5. PSM : Pooled Server Metrics Dataset
+6. SMAP : Soil Moisture Active Passive satellite Dataset
+7. MSL : Mars Science Laboratory Dataset
+8. To be updated
 
 ## Anomaly detection models
 
