@@ -24,7 +24,7 @@ class DataFactory:
             "MSL": self.load_MSL,
         }
         self.datasets = {
-            "toyUSW": TSADStandardDataset
+            "toyUSW": TSADStandardDataset,
             "SWaT": TSADStandardDataset,
             "WADI": TSADStandardDataset,
             "SMD": TSADStandardDataset,
