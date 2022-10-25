@@ -5,7 +5,7 @@ This repository contains time series anomaly detection datasets, models, and the
 
 ## Dataset preparation
 
-For list of dataset details, please refer to: https://decorous-background-e3e.notion.site/79cb1d595ec746a3a4c8371cedb2c608?v=440fdfeea2dc489d806e72b85d3d4da6
+For list of dataset details, please refer to our [notion dataset page](https://decorous-background-e3e.notion.site/79cb1d595ec746a3a4c8371cedb2c608?v=440fdfeea2dc489d806e72b85d3d4da6). 
 
 We don't have rights to publicly distribute dataset we get.
 
