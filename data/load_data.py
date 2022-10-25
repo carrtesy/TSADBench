@@ -15,14 +15,22 @@ class DataFactory:
             print(f"home dir: {args.home_dir}")
 
         self.dataset_fn_dict = {
-            "SWaT": self.load_SWaT,
-            "SMAP": self.load_SMAP,
             "toyUSW": self.load_toyUSW,
+            "SWaT": self.load_SWaT,
+            "WADI": self.load_WADI,
+            "SMD": self.load_SMD,
+            "PSM": self.load_PSM,
+            "SMAP": self.load_SMAP,
+            "MSL": self.load_MSL,
         }
         self.datasets = {
+            "toyUSW": TSADStandardDataset
             "SWaT": TSADStandardDataset,
+            "WADI": TSADStandardDataset,
+            "SMD": TSADStandardDataset,
+            "PSM": TSADStandardDataset,
             "SMAP": TSADStandardDataset,
-            "toyUSW": TSADStandardDataset,
+            "MSL": TSADStandardDataset,
         }
 
         self.transforms = {
