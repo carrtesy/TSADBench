@@ -53,10 +53,12 @@ parser.add_argument("--batch_size", type=int, required=False, default=64, help=f
 parser.add_argument("--eval_batch_size", type=int, required=False, default=64*3, help=f"Batch size")
 parser.add_argument("--lr", type=float, required=False, default=1e-03, help=f"Learning rate")
 parser.add_argument("--window_size", type=int, required=False, default=12, help=f"window size")
+parser.add_argument("--stride", type=int, required=False, default=1, help=f"stride")
 parser.add_argument("--epochs", type=int, required=False, default=30, help=f"epochs to run")
 parser.add_argument("--load_pretrained", action="store_true", help=f"whether to load pretrained version")
 parser.add_argument("--exp_id", type=str, default="test")
 parser.add_argument("--scaler", type=str, default="std")
+parser.add_argument("--window_anomaly", action="store_true", help=f"window-base anomaly")
 
 ### save
 parser.add_argument("--checkpoints", type=str, default="./checkpoints")
@@ -102,6 +104,7 @@ ANP_parser.add_argument("--dim_lat", type=int, required=True, default=256, help=
 ANP_parser.add_argument("--mask_ratio", type=float, default=0.1)
 ANP_parser.add_argument("--anomaly_reduction_mode", type=str, default="mean")
 ANP_parser.add_argument("--eval_samples", type=int, default=3)
+ANP_parser.add_argument("--masking_mode", type=str, default="continuous")
 
 
 args = parser.parse_args()
@@ -131,29 +134,32 @@ Trainers = {
     "Isolation_Forest": IsolationForest_Trainer,
     "VQVAE": VQVAE_Trainer,
     "ANP": ANP_Trainer,
-    #"MADE": MADE_Trainer,
 }
 trainer = Trainers[args.model](args)
 
-# 4. train and infer
+# 4. train
 print("=" * 30)
 print(f"Preparing {args.model} Training...")
 epochs = tqdm(range(args.epochs))
-best_result = None
+best_train_stats = None
 for epoch in epochs:
     # train
     train_stats = trainer.train(train_dataset, train_loader)
     print(f"train_stats: {train_stats}")
     trainer.checkpoint(os.path.join(args.checkpoint_path, f"epoch{epoch}.pth"))
 
-    # infer
-    '''
-    result = trainer.infer(test_dataset, test_loader)
-    p, r, f1 = result["p"], result["r"], result["f1"]
-    if best_result is None or f1 > best_result["f1"]:
-        print(f"Saving best results @epoch{epoch} => f1 score:{f1} | precision:{p}, recall:{r}")
-        best_result = result
+    if best_train_stats is None or train_stats < best_train_stats:
+        print(f"Saving best results @epoch{epoch}")
         trainer.checkpoint(os.path.join(args.checkpoint_path, f"best.pth"))
-    else:
-        print(f"@epoch{epoch} => f1 score:{f1} | precision:{p}, recall:{r}")
-    '''
+        best_train_stats = train_stats
+
+
+# 5. infer
+print("=" * 30)
+print(f"Loading from best path...")
+trainer.load(os.path.join(args.checkpoint_path, f"best.pth"))
+result = trainer.infer(test_dataset, test_loader)
+
+print(f"=== Final Result ===")
+for key in result:
+    print(f"{key}: {result[key]}")

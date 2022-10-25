@@ -7,19 +7,22 @@ from torch.utils.data import DataLoader, Dataset
 from sklearn import preprocessing
 
 class DataFactory:
-    def __init__(self, args):
-        self.args = args
-        self.home_dir = args.home_dir
-        print(f"current location: {os.getcwd()}")
-        print(f"home dir: {args.home_dir}")
+    def __init__(self, args=None):
+        if args is not None:
+            self.args = args
+            self.home_dir = args.home_dir
+            print(f"current location: {os.getcwd()}")
+            print(f"home dir: {args.home_dir}")
 
         self.dataset_fn_dict = {
             "SWaT": self.load_SWaT,
             "SMAP": self.load_SMAP,
+            "toyUSW": self.load_toyUSW,
         }
         self.datasets = {
             "SWaT": TSADStandardDataset,
             "SMAP": TSADStandardDataset,
+            "toyUSW": TSADStandardDataset,
         }
 
         self.transforms = {
@@ -29,13 +32,18 @@ class DataFactory:
 
     def __call__(self):
         train_x, train_y, test_x, test_y = self.load()
-        train_dataset, train_loader, test_dataset, test_loader = self.prepare(train_x, train_y, test_x, test_y,
-                                                                              window_size=self.args.window_size,
-                                                                              dataset_type=self.args.dataset,
-                                                                              batch_size=self.args.batch_size,
-                                                                              eval_batch_size=self.args.eval_batch_size,
-                                                                              shuffle=False,
-                                                                              scaler=self.args.scaler)
+        train_dataset, train_loader, test_dataset, test_loader = self.prepare(
+            train_x, train_y, test_x, test_y,
+            window_size=self.args.window_size,
+            stride=self.args.stride,
+            dataset_type=self.args.dataset,
+            batch_size=self.args.batch_size,
+            eval_batch_size=self.args.eval_batch_size,
+            train_shuffle=False,
+            test_shuffle=False,
+            scaler=self.args.scaler,
+            window_anomaly=self.args.window_anomaly
+        )
         return train_dataset, train_loader, test_dataset, test_loader
 
     def load(self):
@@ -43,35 +51,53 @@ class DataFactory:
 
     def prepare(self, train_x, train_y, test_x, test_y,
                 window_size,
+                stride,
                 dataset_type,
                 batch_size,
                 eval_batch_size,
-                shuffle,
-                scaler):
+                train_shuffle,
+                test_shuffle,
+                scaler,
+                window_anomaly,
+                ):
 
         transform = self.transforms[scaler]
         train_dataset = self.datasets[dataset_type](train_x, train_y,
                                                     flag="train", transform=transform,
-                                                    window_size=window_size)
+                                                    window_size=window_size,
+                                                    stride=stride,
+                                                    window_anomaly=window_anomaly,
+                                                    )
         train_dataloader = DataLoader(
             dataset=train_dataset,
             batch_size=batch_size,
-            shuffle=shuffle
+            shuffle=train_shuffle,
         )
+
+        sample_X, sample_y = next(iter(train_dataloader))
+        print(f"total train dataset- {len(train_dataloader)}, batch_X - {sample_X.shape}, batch_y - {sample_y.shape}")
+
 
         transform = train_dataset.transform
         test_dataset = self.datasets[dataset_type](test_x, test_y,
                                                    flag="test", transform=transform,
-                                                   window_size=window_size)
+                                                   window_size=window_size,
+                                                   stride=stride,
+                                                   window_anomaly=window_anomaly,
+                                                   )
         test_dataloader = DataLoader(
             dataset=test_dataset,
             batch_size=eval_batch_size,
-            shuffle=False
+            shuffle=test_shuffle,
         )
+
+        sample_X, sample_y = next(iter(test_dataloader))
+        print(f"total test dataset- {len(test_dataloader)}, batch_X - {sample_X.shape}, batch_y - {sample_y.shape}")
+
         return train_dataset, train_dataloader, test_dataset, test_dataloader
 
     @staticmethod
-    def load_SWaT(home_dir):
+    def load_SWaT(home_dir="."):
         print("Reading SWaT...")
         base_dir = "data/SWaT"
         SWAT_TRAIN_PATH = os.path.join(home_dir, base_dir, 'SWaT_Dataset_Normal_v0.csv')
@@ -98,7 +124,7 @@ class DataFactory:
         return train_X, train_y, test_X, test_y
 
     @staticmethod
-    def load_SMAP(home_dir):
+    def load_SMAP(home_dir="."):
         print("Reading SMAP...")
 
         base_dir = "data/SMAP"
@@ -116,16 +142,60 @@ class DataFactory:
         print("Loading complete.")
         return train_X, train_y, test_X, test_y
 
+    @staticmethod
+    def load_MSL(home_dir="."):
+        print("Reading MSL...")
+
+        base_dir = "data/MSL"
+        with open(os.path.join(home_dir, base_dir, "MSL_train.pkl"), 'rb') as f:
+            train_X = pickle.load(f)
+        T, C = train_X.shape
+        train_y = np.zeros((T,), dtype=int)
+        with open(os.path.join(home_dir, base_dir, "MSL_test.pkl"), 'rb') as f:
+            test_X = pickle.load(f)
+        with open(os.path.join(home_dir, base_dir, "MSL_test_label.pkl"), 'rb') as f:
+            test_y = pickle.load(f)
+
+        print(f"train: X - {train_X.shape}, y - {train_y.shape}")
+        print(f"test: X - {test_X.shape}, y - {test_y.shape}")
+        print("Loading complete.")
+        return train_X, train_y, test_X, test_y
+
+    @staticmethod
+    def load_toyUSW(home_dir="."):
+        print("Reading ToyUSW...")
+
+        base_dir = "data/toyUSW"
+        with open(os.path.join(home_dir, base_dir, "train.npy"), 'rb') as f:
+            train_X = np.load(f)
+        with open(os.path.join(home_dir, base_dir, "train_label.npy"), 'rb') as f:
+            train_y = np.load(f)
+
+        with open(os.path.join(home_dir, base_dir, "test.npy"), 'rb') as f:
+            test_X = np.load(f)
+        with open(os.path.join(home_dir, base_dir, "test_label.npy"), 'rb') as f:
+            test_y = np.load(f)
+
+        print(f"train: X - {train_X.shape}, y - {train_y.shape}")
+        print(f"test: X - {test_X.shape}, y - {test_y.shape}")
+        print("Loading complete.")
+        return train_X, train_y, test_X, test_y
+
 class TSADStandardDataset(Dataset):
-    def __init__(self, x, y, flag, transform, window_size=1):
+    def __init__(self, x, y, flag, transform, window_size, stride, window_anomaly):
         super().__init__()
         self.transform = transform
         self.x = self.transform.fit_transform(x) if flag == "train" else self.transform.transform(x)
         self.y = y
         self.window_size = window_size
+        self.stride = stride
+        self.window_anomaly = window_anomaly
 
     def __len__(self):
-        return self.x.shape[0] - self.window_size + 1
+        return (self.x.shape[0] - self.window_size) // self.stride + 1
 
     def __getitem__(self, idx):
-        return self.x[idx:idx+self.window_size], self.y[idx:idx+self.window_size]
+        _idx = idx * self.stride
+        label = self.y[_idx:_idx+self.window_size]
+        X, y = self.x[_idx:_idx+self.window_size], (1 in label) if self.window_anomaly else label
+        return X, y
