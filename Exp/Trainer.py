@@ -87,11 +87,12 @@ class Trainer:
         for i, threshold in enumerate(threshold_iterator):
             ypred = anomaly_scores > threshold
             cm, a, p, r, f1 = get_statistics(y, ypred)
+
             if "F1" not in best_result or best_result["F1"] < f1:
                 best_result.update(
                     {
                         "Threshold": threshold,
-                        "Confusion Matrix": cm,
+                        "Confusion Matrix": cm.ravel(),
                         "Precision": p,
                         "Recall": r,
                         "F1": f1,
@@ -114,7 +115,7 @@ class Trainer:
                 best_result.update(
                     {
                         "Threshold-PA": threshold,
-                        "Confusion Matrix-PA": cm,
+                        "Confusion Matrix-PA": cm.ravel(),
                         "Precision-PA": p,
                         "Recall-PA": r,
                         "F1-PA": f1,

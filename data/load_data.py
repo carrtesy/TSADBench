@@ -97,6 +97,26 @@ class DataFactory:
         return train_dataset, train_dataloader, test_dataset, test_dataloader
 
     @staticmethod
+    def load_toyUSW(home_dir="."):
+        print("Reading ToyUSW...")
+
+        base_dir = "data/toyUSW"
+        with open(os.path.join(home_dir, base_dir, "train.npy"), 'rb') as f:
+            train_X = np.load(f)
+        with open(os.path.join(home_dir, base_dir, "train_label.npy"), 'rb') as f:
+            train_y = np.load(f)
+
+        with open(os.path.join(home_dir, base_dir, "test.npy"), 'rb') as f:
+            test_X = np.load(f)
+        with open(os.path.join(home_dir, base_dir, "test_label.npy"), 'rb') as f:
+            test_y = np.load(f)
+
+        print(f"train: X - {train_X.shape}, y - {train_y.shape}")
+        print(f"test: X - {test_X.shape}, y - {test_y.shape}")
+        print("Loading complete.")
+        return train_X, train_y, test_X, test_y
+
+    @staticmethod
     def load_SWaT(home_dir="."):
         print("Reading SWaT...")
         base_dir = "data/SWaT"
@@ -117,6 +137,76 @@ class DataFactory:
 
         train_X, train_y = process_df(df_train)
         test_X, test_y = process_df(df_test)
+
+        print(f"train: X - {train_X.shape}, y - {train_y.shape}")
+        print(f"test: X - {test_X.shape}, y - {test_y.shape}")
+        print("Loading complete.")
+        return train_X, train_y, test_X, test_y
+
+    @staticmethod
+    def load_WADI(home_dir="."):
+        print("Reading WADI...")
+        base_dir = "data/WADI"
+        WADI_TRAIN_PATH = os.path.join(home_dir, base_dir, 'WADI_14days_new.csv')
+        WADI_TEST_PATH = os.path.join(home_dir, base_dir, 'WADI_attackdataLABLE.csv')
+        df_train = pd.read_csv(WADI_TRAIN_PATH, index_col=0)
+        df_test = pd.read_csv(WADI_TEST_PATH, index_col=0, skiprows=[0]) # apply skiprow or erase the first row
+
+        # df_train
+        for col in df_train.columns:
+            if col.strip() not in ["Date", "Time"]:
+                df_train[col] = pd.to_numeric(df_train[col], errors='coerce')
+        df_train.fillna(method='ffill', inplace=True)
+        df_train.fillna(method='bfill', inplace=True)
+
+        train_X = df_train.values[:, 2:].astype(np.float32)
+        T, C = train_X.shape
+        train_y = np.zeros((T,), dtype=int)
+
+        # df_test
+        for col in df_test.columns:
+            if col.strip() not in ["Date", "Time"]:
+                df_test[col] = pd.to_numeric(df_test[col], errors='coerce')
+        df_test.fillna(method='ffill', inplace=True)
+        df_test.fillna(method='bfill', inplace=True)
+        test_X = df_test.values[:, 2:-1].astype(np.float32)
+        test_y = (df_test.values[:, -1] == -1).astype(int)
+
+        print(f"train: X - {train_X.shape}, y - {train_y.shape}")
+        print(f"test: X - {test_X.shape}, y - {test_y.shape}")
+        print("Loading complete.")
+        return train_X, train_y, test_X, test_y
+
+    @staticmethod
+    def load_SMD(home_dir="."):
+        print("Reading SMD...")
+        base_dir = "data/SMD"
+        with open(os.path.join(home_dir, base_dir, "SMD_train.pkl"), 'rb') as f:
+            train_X = pickle.load(f)
+        T, C = train_X.shape
+        train_y = np.zeros((T,), dtype=int)
+        with open(os.path.join(home_dir, base_dir, "SMD_test.pkl"), 'rb') as f:
+            test_X = pickle.load(f)
+        with open(os.path.join(home_dir, base_dir, "SMD_test_label.pkl"), 'rb') as f:
+            test_y = pickle.load(f)
+
+        print(f"train: X - {train_X.shape}, y - {train_y.shape}")
+        print(f"test: X - {test_X.shape}, y - {test_y.shape}")
+        print("Loading complete.")
+        return train_X, train_y, test_X, test_y
+
+    @staticmethod
+    def load_PSM(home_dir="."):
+        print("Reading PSM...")
+        PSM_PATH = os.path.join(home_dir, "data", "PSM")
+        df_train_X = pd.read_csv(os.path.join(PSM_PATH, "train.csv"), index_col=0)
+        df_test_X = pd.read_csv(os.path.join(PSM_PATH, "test.csv"), index_col=0)
+        train_X = df_train_X.values.astype(np.float32)
+        test_X = df_test_X.values.astype(np.float32)
+        T, C = train_X.shape
+        train_y = np.zeros((T,), dtype=int)
+        df_test_y = pd.read_csv(os.path.join(PSM_PATH, "test_label.csv"), index_col=0)
+        test_y = df_test_y.values.astype(np.float32).reshape(-1)
 
         print(f"train: X - {train_X.shape}, y - {train_y.shape}")
         print(f"test: X - {test_X.shape}, y - {test_y.shape}")
@@ -161,25 +251,6 @@ class DataFactory:
         print("Loading complete.")
         return train_X, train_y, test_X, test_y
 
-    @staticmethod
-    def load_toyUSW(home_dir="."):
-        print("Reading ToyUSW...")
-
-        base_dir = "data/toyUSW"
-        with open(os.path.join(home_dir, base_dir, "train.npy"), 'rb') as f:
-            train_X = np.load(f)
-        with open(os.path.join(home_dir, base_dir, "train_label.npy"), 'rb') as f:
-            train_y = np.load(f)
-
-        with open(os.path.join(home_dir, base_dir, "test.npy"), 'rb') as f:
-            test_X = np.load(f)
-        with open(os.path.join(home_dir, base_dir, "test_label.npy"), 'rb') as f:
-            test_y = np.load(f)
-
-        print(f"train: X - {train_X.shape}, y - {train_y.shape}")
-        print(f"test: X - {test_X.shape}, y - {test_y.shape}")
-        print("Loading complete.")
-        return train_X, train_y, test_X, test_y
 
 class TSADStandardDataset(Dataset):
     def __init__(self, x, y, flag, transform, window_size, stride, window_anomaly):
@@ -199,3 +270,7 @@ class TSADStandardDataset(Dataset):
         label = self.y[_idx:_idx+self.window_size]
         X, y = self.x[_idx:_idx+self.window_size], (1 in label) if self.window_anomaly else label
         return X, y
+
+if __name__ == "__main__":
+    datafactory = DataFactory()
+    train_X, train_y, test_X, test_y = datafactory.load_WADI("..")

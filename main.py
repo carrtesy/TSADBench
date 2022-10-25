@@ -59,6 +59,7 @@ parser.add_argument("--load_pretrained", action="store_true", help=f"whether to 
 parser.add_argument("--exp_id", type=str, default="test")
 parser.add_argument("--scaler", type=str, default="std")
 parser.add_argument("--window_anomaly", action="store_true", help=f"window-base anomaly")
+parser.add_argument("--eval_every_epoch", action="store_true", help=f"evaluate every epoch")
 
 ### save
 parser.add_argument("--checkpoints", type=str, default="./checkpoints")
@@ -69,9 +70,10 @@ subparser = parser.add_subparsers(dest='model')
 
 ### USAD
 USAD_parser = subparser.add_parser("USAD")
-USAD_parser.add_argument("--latent_dim", type=int, required=True, default=128, help=f"Encoder, decoder hidden dim")
+USAD_parser.add_argument("--latent_dim", type=int, required=True, default=40, help=f"Encoder, decoder hidden dim")
 USAD_parser.add_argument("--alpha", type=float, required=False, default=0.1, help=f"alpha")
 USAD_parser.add_argument("--beta", type=float, required=False, default=0.9, help=f"beta")
+USAD_parser.add_argument("--K", type=int, default=5, help="down-sampling rate")
 USAD_parser.add_argument("--anomaly_reduction_mode", type=str, default="mean")
 
 ### MAE
@@ -79,7 +81,7 @@ MAE_parser = subparser.add_parser("MAE")
 MAE_parser.add_argument("--enc_dim", type=int, required=True, default=256, help=f"Encoder hidden dim")
 MAE_parser.add_argument("--dec_dim", type=int, required=True, default=256, help=f"Decoder hidden dim")
 MAE_parser.add_argument("--enc_num_layers", type=int, default=3, help=f"Encoder num layers")
-MAE_parser.add_argument("--dec_num_layers", type=int, default=3, help=f"Decoder num layers")
+MAE_parser.add_argument("--dec_num_layers", type=int, default=3,    help=f"Decoder num layers")
 MAE_parser.add_argument("--mask_ratio", type=float, default=0.1)
 MAE_parser.add_argument("--anomaly_reduction_mode", type=str, default="mean")
 MAE_parser.add_argument("--eval_samples", type=int, default=3)
@@ -147,6 +149,12 @@ for epoch in epochs:
     train_stats = trainer.train(train_dataset, train_loader)
     print(f"train_stats: {train_stats}")
     trainer.checkpoint(os.path.join(args.checkpoint_path, f"epoch{epoch}.pth"))
+
+    if args.eval_every_epoch:
+        result = trainer.infer(test_dataset, test_loader)
+        print(f"=== Result @epoch{epoch} ===")
+        for key in result:
+            print(f"{key}: {result[key]}")
 
     if best_train_stats is None or train_stats < best_train_stats:
         print(f"Saving best results @epoch{epoch}")
