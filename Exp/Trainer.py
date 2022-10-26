@@ -153,3 +153,48 @@ class Trainer:
                 y_pred_pa[i] = 1
 
         return y_pred_pa
+
+class SklearnModelTrainer(Trainer):
+    def __init__(self, args):
+        super(SklearnModelTrainer, self).__init__(args)
+
+    def train(self, dataset, dataloader):
+        X = dataset.x
+        self.model.fit(X)
+
+    def infer(self, dataset, dataloader):
+        X, y = dataset.x, dataset.y
+
+        # In sklearn, 1 is normal and -1 is abnormal. convert to 1 (abnormal) or 0 (normal)
+        yhat = self.model.predict(X)
+        yhat = (yhat == -1)
+
+        result = {}
+        # F1
+        cm, a, p, r, f1 = get_statistics(y, yhat)
+        result.update({
+            "Confusion Matrix": cm.ravel(),
+            "Precision": p,
+            "Recall": r,
+            "F1": f1,
+        })
+
+        # F1-PA
+        yhat_pa = self.PA(y, yhat)
+        cm, a, p, r, f1 = get_statistics(y, yhat_pa)
+        result.update({
+            "Confusion Matrix-PA": cm.ravel(),
+            "Precision-PA": p,
+            "Recall-PA": r,
+            "F1-PA": f1,
+        })
+
+        return result
+
+    def checkpoint(self, filepath):
+        with open(filepath, "wb") as f:
+            pickle.dump(self.model, f)
+
+    def load(self, filepath):
+        with open(filepath, "rb") as f:
+            self.model = pickle.load(f)
