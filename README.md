@@ -11,6 +11,11 @@ All datasets are assumed to be in "data" folder.
 
 1. Toy Dataset (toyUSW) : We have created toy dataset to test algorithms promptly. [train.npy](data/toyUSW/train.npy) contains periodic sine waves. [test.npy](data/toyUSW/test.npy) has abnormal situations (stopped signal) and anomalies are labeled in file [test_label.npy](data/toyUSW/test_label.npy).  
 
+NeurIPS-TS dataset are created using the principles in https://openreview.net/forum?id=r8IvOsnHchr.
+We prepared UNI/MUL dataset, for each data length being 1000.
+2. NeurIPS-TS-UNI
+3. NeurIPS-TS-MUL
+
 SWaT and WADI dataset has two types of data: train (normal) and test (abnormal).
 Train set does not contain anomaly set. Test set has anomalies driven by researcher's attack scenarios.
 Request via guidelines in the [link](https://itrust.sutd.edu.sg/itrust-labs_datasets/dataset_info/).
