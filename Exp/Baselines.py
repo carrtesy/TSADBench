@@ -47,11 +47,11 @@ class USAD_Trainer(Trainer):
         super(USAD_Trainer, self).__init__(args=args)
 
         # assert moving average output to be same as input
-        assert self.args.K % 2
+        assert self.args.dsr % 2
         self.moving_avg = torch.nn.AvgPool1d(
-            kernel_size=self.args.K,
+            kernel_size=self.args.dsr,
             stride=1,
-            padding=(self.args.K - 1)//2,
+            padding=(self.args.dsr - 1)//2,
             count_include_pad=False,
         ).to(self.args.device)
 

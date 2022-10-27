@@ -45,9 +45,11 @@ SEED_everything(42)
 
 # 1. Argparse
 print("=" * 30)
-print(f"Parsing arguments...")
+print(f"Preparing arguments...")
 parser = argparse.ArgumentParser(description='[TSAD] Time Series Anomaly Detection')
 args = prepare_arguments(parser)
+os.makedirs(args.checkpoint_path, exist_ok=True)
+os.makedirs(args.output_path, exist_ok=True)
 print(args)
 print("done.")
 

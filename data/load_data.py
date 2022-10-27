@@ -166,8 +166,9 @@ class DataFactory:
                 df_train[col] = pd.to_numeric(df_train[col], errors='coerce')
         df_train.fillna(method='ffill', inplace=True)
         df_train.fillna(method='bfill', inplace=True)
+        df_train.dropna(axis='columns', inplace=True) # drop null columns
 
-        train_X = df_train.values[:, 2:].astype(np.float32)
+        train_X = df_train.values[:, 2:].astype(np.float32) # col0: Date, col1: Time
         T, C = train_X.shape
         train_y = np.zeros((T,), dtype=int)
 
@@ -177,7 +178,9 @@ class DataFactory:
                 df_test[col] = pd.to_numeric(df_test[col], errors='coerce')
         df_test.fillna(method='ffill', inplace=True)
         df_test.fillna(method='bfill', inplace=True)
-        test_X = df_test.values[:, 2:-1].astype(np.float32)
+        df_test.dropna(axis='columns', inplace=True) # drop null columns
+
+        test_X = df_test.values[:, 2:-1].astype(np.float32) # col0: Date, col1: Time, col[-1]: label
         test_y = (df_test.values[:, -1] == -1).astype(int)
 
         print(f"train: X - {train_X.shape}, y - {train_y.shape}")
