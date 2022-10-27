@@ -16,6 +16,8 @@ class DataFactory:
 
         self.dataset_fn_dict = {
             "toyUSW": self.load_toyUSW,
+            "NeurIPS-TS-UNI": self.load_NeurIPS_TS_UNI,
+            "NeurIPS-TS-MUL": self.load_NeurIPS_TS_MUL,
             "SWaT": self.load_SWaT,
             "WADI": self.load_WADI,
             "SMD": self.load_SMD,
@@ -123,6 +125,39 @@ class DataFactory:
         print(f"test: X - {test_X.shape}, y - {test_y.shape}")
         print("Loading complete.")
         return train_X, train_y, test_X, test_y
+
+    @staticmethod
+    def load_NeurIPS_TS_UNI(home_dir="."):
+        print("Reading NeurIPS-TS...")
+
+        base_dir = "data/NeurIPS-TS"
+        normal = pd.read_csv(os.path.join(home_dir, base_dir, "nts_uni_normal.csv"))
+        abnormal = pd.read_csv(os.path.join(home_dir, base_dir, "nts_uni_abnormal.csv"))
+
+        train_X, train_y = normal.values[:, :-1], normal.values[:, -1]
+        test_X, test_y = abnormal.values[:, :-1], abnormal.values[:, -1]
+
+        print(f"train: X - {train_X.shape}, y - {train_y.shape}")
+        print(f"test: X - {test_X.shape}, y - {test_y.shape}")
+        print("Loading complete.")
+        return train_X, train_y, test_X, test_y
+
+    @staticmethod
+    def load_NeurIPS_TS_MUL(home_dir="."):
+        print("Reading NeurIPS-TS...")
+
+        base_dir = "data/NeurIPS-TS"
+        normal = pd.read_csv(os.path.join(home_dir, base_dir, "nts_mul_normal.csv"))
+        abnormal = pd.read_csv(os.path.join(home_dir, base_dir, "nts_mul_abnormal.csv"))
+
+        train_X, train_y = normal.values[:, :-1], normal.values[:, -1]
+        test_X, test_y = abnormal.values[:, :-1], abnormal.values[:, -1]
+
+        print(f"train: X - {train_X.shape}, y - {train_y.shape}")
+        print(f"test: X - {test_X.shape}, y - {test_y.shape}")
+        print("Loading complete.")
+        return train_X, train_y, test_X, test_y
+
 
     @staticmethod
     def load_SWaT(home_dir="."):
@@ -284,4 +319,5 @@ class TSADStandardDataset(Dataset):
 
 if __name__ == "__main__":
     datafactory = DataFactory()
-    train_X, train_y, test_X, test_y = datafactory.load_WADI("..")
+    #train_X, train_y, test_X, test_y = datafactory.load_WADI("..")
+    train_X, train_y, test_X, test_y = datafactory.load_NeurIPS_TS("..")

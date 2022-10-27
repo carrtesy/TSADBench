@@ -82,5 +82,4 @@ def prepare_arguments(parser):
     args.home_dir = "."
     args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-
     return args
