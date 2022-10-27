@@ -23,8 +23,8 @@ Request via guidelines in the [link](https://itrust.sutd.edu.sg/itrust-labs_data
 
 3. WADI (2022-10-25) : Water Distribution Dataset
 - With shared google drive link after request, refer to *WADI.A2_19 Nov 2019*
-- For Normal Dataset, refer to ./WADI_attackdataLABLE.csv
-- For Attack Dataset, refer to ./WADI_14days_new.csv
+- For Normal Dataset, refer to ./WADI_14days_new.csv
+- For Attack Dataset, refer to ./WADI_attackdataLABLE.csv
 
 SMD, PSM, SMAP, MSL are provided in https://github.com/thuml/Anomaly-Transformer.
 
