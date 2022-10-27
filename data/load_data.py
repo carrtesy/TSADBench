@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 import pickle
+import matplotlib.pyplot as plt
 
 from torch.utils.data import DataLoader, Dataset
 from sklearn import preprocessing
@@ -296,6 +297,37 @@ class DataFactory:
         print(f"test: X - {test_X.shape}, y - {test_y.shape}")
         print("Loading complete.")
         return train_X, train_y, test_X, test_y
+
+    @staticmethod
+    def visualize_dataset(train_X, train_y, test_X, test_y, dataset_name, feature_idx):
+        '''
+        :param dataset_name
+        :param feature_idx
+        '''
+
+        F = feature_idx
+        # plot normal
+        plt.figure(figsize=(20, 6))
+        plt.plot(train_X[:, F])
+        plt.title(f"{dataset_name} train data, feature {F}")
+        plt.show()
+
+        # plot abnormal
+        plt.figure(figsize=(20, 6))
+        plt.plot(test_X[:, F])
+        plt.title(f"{dataset_name} test data, feature {F}")
+        s, e = None, None
+        for i in range(len(test_X)):
+            if test_y[i] == 1 and s is None:
+                s = i
+            elif test_y[i] == 0 and s is not None:
+                e = i - 1
+                if (e - s) > 0:
+                    plt.axvspan(s, e, facecolor='red', alpha=0.5)
+                else:
+                    plt.plot(s, test_X[s, F], 'ro')
+                s, e = None, None
+        plt.show()
 
 
 class TSADStandardDataset(Dataset):
