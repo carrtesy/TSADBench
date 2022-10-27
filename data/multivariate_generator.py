@@ -1,3 +1,8 @@
+'''
+NeurIPS-TS-UNI
+https://github.com/datamllab/tods/blob/benchmark/benchmark/synthetic/Generator/multivariate_generator.py
+'''
+
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
