@@ -182,6 +182,9 @@ class DataFactory:
         train_X, train_y = process_df(df_train)
         test_X, test_y = process_df(df_test)
 
+        train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
+        train_y, test_y = train_y.astype(int), test_y.astype(int)
+
         print(f"train: X - {train_X.shape}, y - {train_y.shape}")
         print(f"test: X - {test_X.shape}, y - {test_y.shape}")
         print("Loading complete.")
@@ -219,13 +222,16 @@ class DataFactory:
         test_X = df_test.values[:, 2:-1].astype(np.float32) # col0: Date, col1: Time, col[-1]: label
         test_y = (df_test.values[:, -1] == -1).astype(int)
 
+        train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
+        train_y, test_y = train_y.astype(int), test_y.astype(int)
+
         print(f"train: X - {train_X.shape}, y - {train_y.shape}")
         print(f"test: X - {test_X.shape}, y - {test_y.shape}")
         print("Loading complete.")
         return train_X, train_y, test_X, test_y
 
     @staticmethod
-    def load_SMD(home_dir="."):
+    def load_SMD(home_dir=".") -> ():
         print("Reading SMD...")
         base_dir = "data/SMD"
         with open(os.path.join(home_dir, base_dir, "SMD_train.pkl"), 'rb') as f:
@@ -236,6 +242,9 @@ class DataFactory:
             test_X = pickle.load(f)
         with open(os.path.join(home_dir, base_dir, "SMD_test_label.pkl"), 'rb') as f:
             test_y = pickle.load(f)
+
+        train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
+        train_y, test_y = train_y.astype(int), test_y.astype(int)
 
         print(f"train: X - {train_X.shape}, y - {train_y.shape}")
         print(f"test: X - {test_X.shape}, y - {test_y.shape}")
@@ -253,7 +262,10 @@ class DataFactory:
         T, C = train_X.shape
         train_y = np.zeros((T,), dtype=int)
         df_test_y = pd.read_csv(os.path.join(PSM_PATH, "test_label.csv"), index_col=0)
-        test_y = df_test_y.values.astype(np.float32).reshape(-1)
+        test_y = df_test_y.values.astype(int).reshape(-1)
+
+        train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
+        train_y, test_y = train_y.astype(int), test_y.astype(int)
 
         print(f"train: X - {train_X.shape}, y - {train_y.shape}")
         print(f"test: X - {test_X.shape}, y - {test_y.shape}")
@@ -274,6 +286,9 @@ class DataFactory:
         with open(os.path.join(home_dir, base_dir, "SMAP_test_label.pkl"), 'rb') as f:
             test_y = pickle.load(f)
 
+        train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
+        train_y, test_y = train_y.astype(int), test_y.astype(int)
+
         print(f"train: X - {train_X.shape}, y - {train_y.shape}")
         print(f"test: X - {test_X.shape}, y - {test_y.shape}")
         print("Loading complete.")
@@ -292,6 +307,9 @@ class DataFactory:
             test_X = pickle.load(f)
         with open(os.path.join(home_dir, base_dir, "MSL_test_label.pkl"), 'rb') as f:
             test_y = pickle.load(f)
+
+        train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
+        train_y, test_y = train_y.astype(int), test_y.astype(int)
 
         print(f"train: X - {train_X.shape}, y - {train_y.shape}")
         print(f"test: X - {test_X.shape}, y - {test_y.shape}")
@@ -351,5 +369,6 @@ class TSADStandardDataset(Dataset):
 
 if __name__ == "__main__":
     datafactory = DataFactory()
-    #train_X, train_y, test_X, test_y = datafactory.load_WADI("..")
-    train_X, train_y, test_X, test_y = datafactory.load_NeurIPS_TS("..")
+    train_X, train_y, test_X, test_y = datafactory.load_MSL("..")
+    # train_X, train_y, test_X, test_y = datafactory.load_WADI("..")
+    # train_X, train_y, test_X, test_y = datafactory.load_NeurIPS_TS("..")
