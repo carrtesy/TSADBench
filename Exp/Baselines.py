@@ -1,49 +1,23 @@
 # Trainer
-from Exp.Trainer import Trainer, SklearnModelTrainer
+from Exp.Trainer import Trainer
 
 # models
 from models.USAD import USAD
-from sklearn.svm import OneClassSVM
-from sklearn.ensemble import IsolationForest
-from sklearn.neighbors import LocalOutlierFactor
-
 
 # utils
 from utils.metrics import get_statistics
 
 # others
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
 from tqdm import tqdm
 import pickle
 
-class LOF_Trainer(SklearnModelTrainer):
-    def __init__(self, args):
-        super(LOF_Trainer, self).__init__(args)
-        self.model = LocalOutlierFactor(
-            novelty=True,
-        )
-
-class IsolationForest_Trainer(SklearnModelTrainer):
-    def __init__(self, args):
-        super(IsolationForest_Trainer, self).__init__(args)
-        self.model = IsolationForest(
-            n_estimators=args.n_estimators,
-            n_jobs=args.n_jobs,
-            random_state=args.random_state,
-            verbose=args.verbose,
-        )
-
-class OCSVM_Trainer(SklearnModelTrainer):
-    def __init__(self, args):
-        super(OCSVM_Trainer, self).__init__(args)
-        self.model = LocalOutlierFactor()
-
-
 class USAD_Trainer(Trainer):
-    def __init__(self, args):
+    def __init__(self, args, train_loader, test_loader):
         super(USAD_Trainer, self).__init__(args=args)
 
         # assert moving average output to be same as input
@@ -64,11 +38,14 @@ class USAD_Trainer(Trainer):
         self.optimizer2 = torch.optim.Adam(params=self.model.parameters(), lr=args.lr)
         self.epoch = 0
 
+        self.train_loader = train_loader
+        self.test_loader = test_loader
+
     def train(self, dataset, dataloader):
         self.model.train()
         train_iterator = tqdm(
-            dataloader,
-            total=len(dataloader),
+            self.train_loader,
+            total=len(self.train_loader),
             desc="training",
             leave=True
         )
@@ -119,10 +96,10 @@ class USAD_Trainer(Trainer):
         return out
 
     @torch.no_grad()
-    def infer(self, dataset, dataloader):
+    def infer(self):
         self.model.eval()
-        y = dataset.y
-        anomaly_scores = self.calculate_anomaly_scores(dataloader)
+        y = self.test_loader.dataset.y
+        anomaly_scores = self.calculate_anomaly_scores(self.test_loader)
         anomaly_scores = self.reduce(anomaly_scores)
         result = self.get_result(y, anomaly_scores)
         return result

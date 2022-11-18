@@ -65,39 +65,67 @@ class Trainer:
                 raise NotImplementedError
         return out
 
+    def oracle_thresholding(self, gt, anomaly_scores, samples=100):
+        '''
+        Find the threshold that gives best F1.
+        '''
 
-    def get_result(self, y, anomaly_scores, samples=100):
+        m, M = anomaly_scores.min(), anomaly_scores.max()
+        threshold_iterator = tqdm(
+            np.linspace(m, M, num=samples),
+            total=len(np.linspace(m, M, num=samples)),
+            desc="Thresholding",
+            leave=True
+        )
+
+        best_threshold, best_score = None, None
+        for i, threshold in enumerate(threshold_iterator):
+            pred = anomaly_scores > threshold
+            cm, a, p, r, f1 = get_statistics(gt, pred)
+            if best_score is None or best_score < f1:
+                best_threshold, best_score = threshold, f1
+
+        return best_threshold
+
+
+    def get_result(self, gt, anomaly_scores, samples=100):
         '''
         :param y:
         :param anomaly_scores:
         :param samples:
         :return: F1, Precision, Recall of (y, yhat) and (y, yhat_PA)
         '''
-        best_result = {}
-        m, M = anomaly_scores.min(), anomaly_scores.max()
+        result = {}
 
         # F1 SCORE
-        threshold_iterator = tqdm(
-            np.linspace(m, M, num=samples),
-            total=len(np.linspace(m, M, num=samples)),
-            desc="Thresholding F1",
-            leave=True
+        threshold = self.oracle_thresholding(gt, anomaly_scores, samples)
+        pred = (anomaly_scores > threshold).astype(int)
+        cm, a, p, r, f1 = get_statistics(gt, pred)
+        result.update(
+            {
+                "Threshold": threshold,
+                "Confusion Matrix": cm.ravel(),
+                "Precision": p,
+                "Recall": r,
+                "F1": f1,
+            }
         )
 
-        for i, threshold in enumerate(threshold_iterator):
-            ypred = anomaly_scores > threshold
-            cm, a, p, r, f1 = get_statistics(y, ypred)
+        # F1 SCORE
+        threshold = self.oracle_thresholding(y, anomaly_scores, samples)
+        pred = (anomaly_scores > threshold).astype(int)
+        gt = y.astype(int)
+        cm, a, p, r, f1 = get_statistics(gt, pred)
+        result.update(
+            {
+                "Threshold": threshold,
+                "Confusion Matrix": cm.ravel(),
+                "Precision": p,
+                "Recall": r,
+                "F1": f1,
+            }
+        )
 
-            if "F1" not in best_result or best_result["F1"] < f1:
-                best_result.update(
-                    {
-                        "Threshold": threshold,
-                        "Confusion Matrix": cm.ravel(),
-                        "Precision": p,
-                        "Recall": r,
-                        "F1": f1,
-                    }
-                )
 
         # F1-PA SCORE
         threshold_iterator = tqdm(

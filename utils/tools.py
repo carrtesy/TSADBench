@@ -21,6 +21,8 @@ def read_xlsx_and_convert_to_csv(path):
     excelFile.to_csv(f"{filename}.csv", index=None, header=True)
 
 
+
+
 if __name__ == "__main__":
     print("*")
     read_xlsx_and_convert_to_csv("../data/SWaT/SWaT_Dataset_Attack_v0.xlsx")

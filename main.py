@@ -35,10 +35,11 @@ import numpy as np
 from tqdm import tqdm
 from data.load_data import DataFactory
 from Exp.Trainer import *
+from Exp.Sklearn_Baselines import *
 from Exp.Baselines import *
-from Exp.MAE_Trainer import *
-from Exp.VQVAE_Trainer import *
-from Exp.ANP_Trainer import *
+#from Exp.MAE_Trainer import *
+#from Exp.VQVAE_Trainer import *
+#from Exp.ANP_Trainer import *
 
 from utils.tools import SEED_everything
 SEED_everything(42)
@@ -73,7 +74,12 @@ Trainers = {
     #"VQVAE": VQVAE_Trainer,
     #"ANP": ANP_Trainer,
 }
-trainer = Trainers[args.model](args)
+
+trainer = Trainers[args.model](
+    args=args,
+    train_loader=train_loader,
+    test_loader=test_loader,
+)
 
 # 4. train
 print("=" * 30)

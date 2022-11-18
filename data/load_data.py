@@ -28,6 +28,8 @@ class DataFactory:
         }
         self.datasets = {
             "toyUSW": TSADStandardDataset,
+            "NeurIPS-TS-UNI": TSADStandardDataset,
+            "NeurIPS-TS-MUL": TSADStandardDataset,
             "SWaT": TSADStandardDataset,
             "WADI": TSADStandardDataset,
             "SMD": TSADStandardDataset,
@@ -122,6 +124,9 @@ class DataFactory:
         with open(os.path.join(home_dir, base_dir, "test_label.npy"), 'rb') as f:
             test_y = np.load(f)
 
+        train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
+        train_y, test_y = train_y.astype(int), test_y.astype(int)
+
         print(f"train: X - {train_X.shape}, y - {train_y.shape}")
         print(f"test: X - {test_X.shape}, y - {test_y.shape}")
         print("Loading complete.")
@@ -138,6 +143,9 @@ class DataFactory:
         train_X, train_y = normal.values[:, :-1], normal.values[:, -1]
         test_X, test_y = abnormal.values[:, :-1], abnormal.values[:, -1]
 
+        train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
+        train_y, test_y = train_y.astype(int), test_y.astype(int)
+
         print(f"train: X - {train_X.shape}, y - {train_y.shape}")
         print(f"test: X - {test_X.shape}, y - {test_y.shape}")
         print("Loading complete.")
@@ -153,6 +161,9 @@ class DataFactory:
 
         train_X, train_y = normal.values[:, :-1], normal.values[:, -1]
         test_X, test_y = abnormal.values[:, :-1], abnormal.values[:, -1]
+
+        train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
+        train_y, test_y = train_y.astype(int), test_y.astype(int)
 
         print(f"train: X - {train_X.shape}, y - {train_y.shape}")
         print(f"test: X - {test_X.shape}, y - {test_y.shape}")
