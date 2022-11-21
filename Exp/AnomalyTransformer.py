@@ -35,6 +35,10 @@ class AnomalyTransformer_Trainer(Trainer):
         self.device = self.args.device
         self.train_loader = train_loader
         self.test_loader = test_loader
+        self.threshold_function_map = {
+            "oracle": self.oracle_thresholding,
+            "anomaly_transformer": self.anomaly_transformer_thresholding,
+        }
 
     # code referrence:
     # https://github.com/thuml/Anomaly-Transformer/blob/72a71e5f0847bd14ba0253de899f7b0d5ba6ee97/solver.py#L130
@@ -106,29 +110,70 @@ class AnomalyTransformer_Trainer(Trainer):
     # https://github.com/thuml/Anomaly-Transformer/blob/72a71e5f0847bd14ba0253de899f7b0d5ba6ee97/solver.py#L207
     @torch.no_grad()
     def infer(self):
-        temperature = 50
-        criterion = nn.MSELoss(reduce=False)
-        threshold = self.get_threshold(temperature=temperature, criterion=criterion)
-        anomaly_scores = self.calculate_anomaly_scores(temperature=temperature, criterion=criterion)
-        test_labels = self.test_loader.dataset.y
+        self.model.eval()
+        gt = self.test_loader.dataset.y
+        anomaly_scores = self.calculate_anomaly_scores()
+        threshold = self.get_threshold(gt=gt, anomaly_scores=anomaly_scores)
         pred = (anomaly_scores > threshold).astype(int)
-        gt = test_labels.astype(int)
 
+        result = {}
+        pointwise_result = self.get_pointwise_result(gt, anomaly_scores, threshold)
+        PA_result = self.get_PA_result(gt, anomaly_scores, threshold)
+        result.update(pointwise_result)
+        result.update(PA_result)
 
-        from sklearn.metrics import precision_recall_fscore_support
-        from sklearn.metrics import accuracy_score
-        accuracy = accuracy_score(gt, pred)
-        precision, recall, f_score, support = precision_recall_fscore_support(gt, pred,
-                                                                              average='binary')
-        print(
-            "Accuracy : {:0.4f}, Precision : {:0.4f}, Recall : {:0.4f}, F-score : {:0.4f} ".format(
-                accuracy, precision,
-                recall, f_score))
+        return result
 
-        return accuracy, precision, recall, f_score
+    def calculate_anomaly_scores(self, temperature, criterion):
+        # (3) evaluation on the test set
+        test_labels = []
+        attens_energy = []
+        for i, (input_data, labels) in enumerate(self.test_loader):
+            input = input_data.float().to(self.device)
+            output, series, prior, _ = self.model(input)
+
+            loss = torch.mean(criterion(input, output), dim=-1)
+
+            series_loss = 0.0
+            prior_loss = 0.0
+            for u in range(len(prior)):
+                if u == 0:
+                    series_loss = my_kl_loss(series[u], (
+                            prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                                   self.win_size)).detach()) * temperature
+                    prior_loss = my_kl_loss(
+                        (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                                self.win_size)),
+                        series[u].detach()) * temperature
+                else:
+                    series_loss += my_kl_loss(series[u], (
+                            prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                                   self.win_size)).detach()) * temperature
+                    prior_loss += my_kl_loss(
+                        (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                                self.win_size)),
+                        series[u].detach()) * temperature
+            metric = torch.softmax((-series_loss - prior_loss), dim=-1)
+
+            cri = metric * loss
+            cri = cri.detach().cpu().numpy()
+            attens_energy.append(cri)
+            test_labels.append(labels)
+
+        attens_energy = np.concatenate(attens_energy, axis=0).reshape(-1)
+        test_labels = np.concatenate(test_labels, axis=0).reshape(-1)
+        test_energy = np.array(attens_energy)
+        return test_energy
+
+    def get_threshold(self, gt, anomaly_scores):
+        print(f"thresholding with algorithm: {self.args.thresholding}")
+        return self.threshold_function_map[self.args.thresholding]()
 
     @torch.no_grad()
-    def get_threshold(self, temperature, criterion):
+    def anomaly_transformer_thresholding(self):
+        temperature = 50
+        criterion = nn.MSELoss(reduce=False)
+
         # (1) statistics on the train set
         attens_energy = []
         for i, (input_data, labels) in enumerate(self.train_loader):
@@ -201,45 +246,5 @@ class AnomalyTransformer_Trainer(Trainer):
         attens_energy = np.concatenate(attens_energy, axis=0).reshape(-1)
         test_energy = np.array(attens_energy)
         combined_energy = np.concatenate([train_energy, test_energy], axis=0)
-        threshold = np.percentile(combined_energy, 100 - self.anomaly_ratio)
+        threshold = np.percentile(combined_energy, 100 - self.args.anomaly_ratio)
         return threshold
-
-    def calculate_anomaly_scores(self, temperature, criterion):
-        # (3) evaluation on the test set
-        test_labels = []
-        attens_energy = []
-        for i, (input_data, labels) in enumerate(self.test_loader):
-            input = input_data.float().to(self.device)
-            output, series, prior, _ = self.model(input)
-
-            loss = torch.mean(criterion(input, output), dim=-1)
-
-            series_loss = 0.0
-            prior_loss = 0.0
-            for u in range(len(prior)):
-                if u == 0:
-                    series_loss = my_kl_loss(series[u], (
-                            prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                   self.win_size)).detach()) * temperature
-                    prior_loss = my_kl_loss(
-                        (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                self.win_size)),
-                        series[u].detach()) * temperature
-                else:
-                    series_loss += my_kl_loss(series[u], (
-                            prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                   self.win_size)).detach()) * temperature
-                    prior_loss += my_kl_loss(
-                        (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                self.win_size)),
-                        series[u].detach()) * temperature
-            metric = torch.softmax((-series_loss - prior_loss), dim=-1)
-
-            cri = metric * loss
-            cri = cri.detach().cpu().numpy()
-            attens_energy.append(cri)
-            test_labels.append(labels)
-
-        attens_energy = np.concatenate(attens_energy, axis=0).reshape(-1)
-        test_labels = np.concatenate(test_labels, axis=0).reshape(-1)
-        test_energy = np.array(attens_energy)

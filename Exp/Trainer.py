@@ -6,6 +6,7 @@ import copy
 from tqdm import tqdm
 import pickle
 from utils.metrics import get_statistics
+from utils.metrics import PA
 
 class Trainer:
     def __init__(self, args):
@@ -65,7 +66,8 @@ class Trainer:
                 raise NotImplementedError
         return out
 
-    def oracle_thresholding(self, gt, anomaly_scores, samples=100):
+    @torch.no_grad()
+    def oracle_thresholding(self, gt, anomaly_scores, samples=100, point_adjust=False):
         '''
         Find the threshold that gives best F1.
         '''
@@ -81,106 +83,40 @@ class Trainer:
         best_threshold, best_score = None, None
         for i, threshold in enumerate(threshold_iterator):
             pred = anomaly_scores > threshold
+            if point_adjust:
+                pred = PA(gt, pred)
             cm, a, p, r, f1 = get_statistics(gt, pred)
             if best_score is None or best_score < f1:
                 best_threshold, best_score = threshold, f1
 
         return best_threshold
 
-
-    def get_result(self, gt, anomaly_scores, samples=100):
-        '''
-        :param y:
-        :param anomaly_scores:
-        :param samples:
-        :return: F1, Precision, Recall of (y, yhat) and (y, yhat_PA)
-        '''
-        result = {}
-
-        # F1 SCORE
-        threshold = self.oracle_thresholding(gt, anomaly_scores, samples)
+    @staticmethod
+    def get_pointwise_result(gt, anomaly_scores, threshold):
         pred = (anomaly_scores > threshold).astype(int)
         cm, a, p, r, f1 = get_statistics(gt, pred)
-        result.update(
-            {
-                "Threshold": threshold,
-                "Confusion Matrix": cm.ravel(),
-                "Precision": p,
-                "Recall": r,
-                "F1": f1,
-            }
-        )
-
-        # F1 SCORE
-        threshold = self.oracle_thresholding(y, anomaly_scores, samples)
-        pred = (anomaly_scores > threshold).astype(int)
-        gt = y.astype(int)
-        cm, a, p, r, f1 = get_statistics(gt, pred)
-        result.update(
-            {
-                "Threshold": threshold,
-                "Confusion Matrix": cm.ravel(),
-                "Precision": p,
-                "Recall": r,
-                "F1": f1,
-            }
-        )
-
-
-        # F1-PA SCORE
-        threshold_iterator = tqdm(
-            np.linspace(m, M, num=samples),
-            total=len(np.linspace(m, M, num=samples)),
-            desc="Thresholding F1-PA",
-            leave=True
-        )
-
-        for i, threshold in enumerate(threshold_iterator):
-            ypred = anomaly_scores > threshold
-            ypred_pa = self.PA(y, ypred)
-            cm, a, p, r, f1 = get_statistics(y, ypred_pa)
-            if "F1-PA" not in best_result or best_result["F1-PA"] < f1:
-                best_result.update(
-                    {
-                        "Threshold-PA": threshold,
-                        "Confusion Matrix-PA": cm.ravel(),
-                        "Precision-PA": p,
-                        "Recall-PA": r,
-                        "F1-PA": f1,
-                    }
-                )
-
-        return best_result
+        result = {
+            "Threshold": threshold,
+            "Confusion Matrix": cm.ravel(),
+            "Precision": p,
+            "Recall": r,
+            "F1": f1,
+        }
+        return result
 
     @staticmethod
-    def PA(y, y_pred):
-        '''
-        Point-Adjust Algorithm
-        https://github.com/thuml/Anomaly-Transformer/blob/main/solver.py
-        '''
-        anomaly_state = False
-        y_pred_pa = copy.deepcopy(y_pred)
-        for i in range(len(y)):
-            if y[i] == 1 and y_pred_pa[i] == 1 and not anomaly_state:
-                anomaly_state = True
-                for j in range(i, 0, -1):
-                    if y[j] == 0:
-                        break
-                    else:
-                        if y_pred_pa[j] == 0:
-                            y_pred_pa[j] = 1
-                for j in range(i, len(y)):
-                    if y[j] == 0:
-                        break
-                    else:
-                        if y_pred_pa[j] == 0:
-                            y_pred_pa[j] = 1
-            elif y[i] == 0:
-                anomaly_state = False
-            if anomaly_state:
-                y_pred_pa[i] = 1
-
-        return y_pred_pa
+    def get_PA_result(gt, anomaly_scores, threshold):
+        pred = (anomaly_scores > threshold).astype(int)
+        pa_pred = PA(gt, pred)
+        cm, a, p, r, f1 = get_statistics(gt, pa_pred)
+        result = {
+            "Threshold (PA)": threshold,
+            "Confusion Matrix (PA)": cm.ravel(),
+            "Precision (PA)": p,
+            "Recall (PA)": r,
+            "F1 (PA)": f1,
+        }
+        return result
 
 class SklearnModelTrainer(Trainer):
     def __init__(self, args):

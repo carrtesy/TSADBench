@@ -21,6 +21,9 @@ def prepare_arguments(parser):
     parser.add_argument("--checkpoints", type=str, default="./checkpoints")
     parser.add_argument("--outputs", type=str, default="./outputs")
 
+    ### thresholding
+    parser.add_argument("--thresholding", type=str, default="oracle")
+
     ## subparser of models
     subparser = parser.add_subparsers(dest='model')
     OCSVM_parser = subparser.add_parser("OCSVM")
