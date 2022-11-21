@@ -9,8 +9,10 @@ from utils.metrics import get_statistics
 from utils.metrics import PA
 
 class Trainer:
-    def __init__(self, args):
+    def __init__(self, args, train_loader, test_loader):
         self.args = args
+        self.train_loader = train_loader
+        self.test_loader = test_loader
 
     def train(self, dataset, dataloader):
         pass
@@ -91,42 +93,18 @@ class Trainer:
 
         return best_threshold
 
-    @staticmethod
-    def get_pointwise_result(gt, anomaly_scores, threshold):
-        pred = (anomaly_scores > threshold).astype(int)
-        cm, a, p, r, f1 = get_statistics(gt, pred)
-        result = {
-            "Threshold": threshold,
-            "Confusion Matrix": cm.ravel(),
-            "Precision": p,
-            "Recall": r,
-            "F1": f1,
-        }
-        return result
-
-    @staticmethod
-    def get_PA_result(gt, anomaly_scores, threshold):
-        pred = (anomaly_scores > threshold).astype(int)
-        pa_pred = PA(gt, pred)
-        cm, a, p, r, f1 = get_statistics(gt, pa_pred)
-        result = {
-            "Threshold (PA)": threshold,
-            "Confusion Matrix (PA)": cm.ravel(),
-            "Precision (PA)": p,
-            "Recall (PA)": r,
-            "F1 (PA)": f1,
-        }
-        return result
 
 class SklearnModelTrainer(Trainer):
-    def __init__(self, args):
-        super(SklearnModelTrainer, self).__init__(args)
+    def __init__(self, args, train_loader, test_loader):
+        super(SklearnModelTrainer, self).__init__(args, train_loader, test_loader)
 
-    def train(self, dataset, dataloader):
-        X = dataset.x
+    def train(self):
+        dataset = self.train_loader.dataset
+        X = self.train_loader.dataset.x
         self.model.fit(X)
 
     def infer(self, dataset, dataloader):
+        dataset = self.test_loader.dataset
         X, y = dataset.x, dataset.y
 
         # In sklearn, 1 is normal and -1 is abnormal. convert to 1 (abnormal) or 0 (normal)
@@ -144,13 +122,13 @@ class SklearnModelTrainer(Trainer):
         })
 
         # F1-PA
-        yhat_pa = self.PA(y, yhat)
+        yhat_pa = PA(y, yhat)
         cm, a, p, r, f1 = get_statistics(y, yhat_pa)
         result.update({
-            "Confusion Matrix-PA": cm.ravel(),
-            "Precision-PA": p,
-            "Recall-PA": r,
-            "F1-PA": f1,
+            "Confusion Matrix (PA)": cm.ravel(),
+            "Precision (PA)": p,
+            "Recall (PA)": r,
+            "F1 (PA)": f1,
         })
 
         return result

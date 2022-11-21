@@ -7,6 +7,7 @@ python main.py \
   --dataset $3 \
   --window_size $4 \
   --epochs $5 \
+  --scaler std \
   $2 \
   --latent_dim $6 \
   --anomaly_reduction_mode mean \

@@ -6,8 +6,10 @@ from models.AnomalyTransformer import AnomalyTransformer
 
 # utils
 from utils.metrics import get_statistics
+from utils.metrics import PA
 from utils.optim import adjust_learning_rate
 from utils.custom_loss import my_kl_loss
+
 
 # others
 import torch
@@ -23,7 +25,7 @@ import pickle
 
 class AnomalyTransformer_Trainer(Trainer):
     def __init__(self, args, train_loader, test_loader):
-        super(AnomalyTransformer_Trainer, self).__init__(args=args)
+        super(AnomalyTransformer_Trainer, self).__init__(args=args, train_loader=train_loader, test_loader=test_loader)
         self.model = AnomalyTransformer(
             win_size=self.win_size,
             enc_in=args.num_channels,
@@ -33,8 +35,6 @@ class AnomalyTransformer_Trainer(Trainer):
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=args.lr)
         self.num_epochs = self.args.epochs
         self.device = self.args.device
-        self.train_loader = train_loader
-        self.test_loader = test_loader
         self.threshold_function_map = {
             "oracle": self.oracle_thresholding,
             "anomaly_transformer": self.anomaly_transformer_thresholding,
@@ -110,22 +110,39 @@ class AnomalyTransformer_Trainer(Trainer):
     # https://github.com/thuml/Anomaly-Transformer/blob/72a71e5f0847bd14ba0253de899f7b0d5ba6ee97/solver.py#L207
     @torch.no_grad()
     def infer(self):
+        result = {}
         self.model.eval()
         gt = self.test_loader.dataset.y
         anomaly_scores = self.calculate_anomaly_scores()
+
+        # F1
         threshold = self.get_threshold(gt=gt, anomaly_scores=anomaly_scores)
         pred = (anomaly_scores > threshold).astype(int)
+        cm, a, p, r, f1 = get_statistics(gt, pred)
+        result.update({
+            "Threshold": threshold,
+            "Confusion Matrix": cm.ravel(),
+            "Precision": p,
+            "Recall": r,
+            "F1": f1,
+        })
 
-        result = {}
-        pointwise_result = self.get_pointwise_result(gt, anomaly_scores, threshold)
-        PA_result = self.get_PA_result(gt, anomaly_scores, threshold)
-        result.update(pointwise_result)
-        result.update(PA_result)
+        # F1-PA
+        threshold = self.get_threshold(gt=gt, anomaly_scores=anomaly_scores, point_adjust=True)
+        pred = (anomaly_scores > threshold).astype(int)
+        pa_pred = PA(gt, pred)
+        cm, a, p, r, f1 = get_statistics(gt, pa_pred)
+        result.update({
+            "Threshold (PA)": threshold,
+            "Confusion Matrix (PA)": cm.ravel(),
+            "Precision (PA)": p,
+            "Recall (PA)": r,
+            "F1 (PA)": f1,
+        })
 
         return result
 
     def calculate_anomaly_scores(self, temperature, criterion):
-        # (3) evaluation on the test set
         test_labels = []
         attens_energy = []
         for i, (input_data, labels) in enumerate(self.test_loader):
@@ -165,12 +182,12 @@ class AnomalyTransformer_Trainer(Trainer):
         test_energy = np.array(attens_energy)
         return test_energy
 
-    def get_threshold(self, gt, anomaly_scores):
+    def get_threshold(self, gt, anomaly_scores, point_adjust=False):
         print(f"thresholding with algorithm: {self.args.thresholding}")
-        return self.threshold_function_map[self.args.thresholding]()
+        return self.threshold_function_map[self.args.thresholding](gt, anomaly_scores, point_adjust)
 
     @torch.no_grad()
-    def anomaly_transformer_thresholding(self):
+    def anomaly_transformer_thresholding(self, gt, anomaly_scores, point_adjust):
         temperature = 50
         criterion = nn.MSELoss(reduce=False)
 
