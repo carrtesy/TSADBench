@@ -48,18 +48,18 @@ SMD, PSM, SMAP, MSL are provided in https://github.com/thuml/Anomaly-Transformer
 
 ## Anomaly detection models
 
-1. LSTM Enc-Dec structure
-[Malhotra, Pankaj, et al. "LSTM-based encoder-decoder for multi-sensor anomaly detection."(2016).](https://arxiv.org/pdf/1607.00148v2.pdf)
-2. OmniAnomaly
-[Su, Ya, et al. "Robust anomaly detection for multivariate time series through stochastic recurrent neural network." Proceedings of the 25th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining. 2019.](https://dl.acm.org/doi/pdf/10.1145/3292500.3330672?casa_token=k52TYpPsw2QAAAAA:5PQRaCv7bH507y-pnpvFqLM_TDUmMMTlZU24P8coKzZmT6LVtFC-8dh8AmhTJ_kYZFl11NyxBSGi)
-3. USAD
+1. OCSVM [David M. J. Tax, Robert P. W. Duin:
+"Support Vector Data Description.", Mach. Learn. 54(1): 45-66 (2004)](https://homepage.tudelft.nl/a9p19/papers/ML_SVDD_04.pdf)
+2. Isolation Forest [Fei Tony Liu, Kai Ming Ting, Zhi-Hua Zhou:
+Isolation Forest. ICDM 2008: 413-422](https://cs.nju.edu.cn/zhouzh/zhouzh.files/publication/icdm08b.pdf?q=isolation-forest)
+3. LOF [Markus M. Breunig, Hans-Peter Kriegel, Raymond T. Ng, Jörg Sander:
+LOF: Identifying Density-Based Local Outliers. SIGMOD Conference 2000: 93-104](https://dl.acm.org/doi/pdf/10.1145/335191.335388) 
+4. LSTMEncDec [Malhotra, Pankaj, et al. "LSTM-based encoder-decoder for multi-sensor anomaly detection."(2016).(https://arxiv.org/pdf/1607.00148v2.pdf)
+5. OmniAnomaly [Su, Ya, et al. "Robust anomaly detection for multivariate time series through stochastic recurrent neural network." Proceedings of the 25th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining. 2019.](https://dl.acm.org/doi/pdf/10.1145/3292500.3330672?casa_token=k52TYpPsw2QAAAAA:5PQRaCv7bH507y-pnpvFqLM_TDUmMMTlZU24P8coKzZmT6LVtFC-8dh8AmhTJ_kYZFl11NyxBSGi)
+6. USAD
 [Audibert, Julien, et al. "Usad: Unsupervised anomaly detection on multivariate time series." Proceedings of the 26th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining. 2020.](https://dl.acm.org/doi/pdf/10.1145/3394486.3403392)
 
-## Paper implementation
-- SWaT
+## References
 
-| Model       | Accuracy | Precision | Recall | F1 |
-|-------------|----------|-----------|--------|----|
-| LSTMAE      |          |           |        |    |
-| OmniAnomaly |          |           |        |    |
-| USAD        |          |           |        |    |
+- LSTMEncDec Implementation: https://joungheekim.github.io/2020/11/14/code-review/ (Explanations in Korean)
+- Anomaly Transformer Github: https://github.com/thuml/Anomaly-Transformer
