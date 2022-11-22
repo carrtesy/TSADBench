@@ -37,9 +37,7 @@ from data.load_data import DataFactory
 from Exp.Trainer import *
 from Exp.Sklearn_Baselines import *
 from Exp.Baselines import *
-#from Exp.MAE_Trainer import *
-#from Exp.VQVAE_Trainer import *
-#from Exp.ANP_Trainer import *
+from Exp.AnomalyTransformer import AnomalyTransformer_Trainer
 
 from utils.tools import SEED_everything
 SEED_everything(42)
@@ -70,6 +68,7 @@ Trainers = {
     "IsolationForest": IsolationForest_Trainer,
     "LOF": LOF_Trainer,
     "USAD": USAD_Trainer,
+    "AnomalyTransformer": AnomalyTransformer_Trainer,
     #"MAE": MAE_Trainer,
     #"VQVAE": VQVAE_Trainer,
     #"ANP": ANP_Trainer,
@@ -91,12 +90,12 @@ if args.epochs > 0:
     best_train_stats = None
     for epoch in epochs:
         # train
-        train_stats = trainer.train(train_dataset, train_loader)
+        train_stats = trainer.train()
         print(f"train_stats: {train_stats}")
         trainer.checkpoint(os.path.join(args.checkpoint_path, f"epoch{epoch}.pth"))
 
         if args.eval_every_epoch:
-            result = trainer.infer(test_dataset, test_loader)
+            result = trainer.infer()
             print(f"=== Result @epoch{epoch} ===")
             for key in result:
                 print(f"{key}: {result[key]}")

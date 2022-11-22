@@ -1,14 +1,11 @@
-echo "$2+$3 @gpu $1"
-echo "config: model $2 | dataset $3 | window_size $4 | epochs $5 | latent dim $6 | dsr $7"
-
-export CUDA_VISIBLE_DEVICES=$1;
-python main.py \
-  --exp_id $2_$3_ws_$4_ep_$5_lt_$6_dsr_$7 \
-  --dataset $3 \
-  --window_size $4 \
-  --epochs $5 \
-  --scaler std \
-  $2 \
-  --latent_dim $6 \
-  --anomaly_reduction_mode mean \
-  --dsr $7
+# USAD
+echo "run USAD"
+sh scripts/run_USAD.sh 0 USAD toyUSW 12 30 4 1 > ./log/USAD_toyUSW &&
+sh scripts/run_USAD.sh 0 USAD NeurIPS-TS-UNI 12 30 4 1 > ./log/USAD_NeurIPS-TS-UNI &&
+sh scripts/run_USAD.sh 0 USAD NeurIPS-TS-MUL 12 30 12 1 > ./log/USAD_NeurIPS-TS-MUL &&
+#sh scripts/run_USAD.sh 0 USAD SWaT 12 70  40  5 > ./log/USAD_SWaT &&
+#sh scripts/run_USAD.sh 0 USAD SMD  5  250 38  5 > ./log/USAD_SMD  &&
+#sh scripts/run_USAD.sh 0 USAD SMAP 5  250 55  5 > ./log/USAD_SMAP &&
+#sh scripts/run_USAD.sh 0 USAD MSL  5  250 33  5 > ./log/USAD_MSL  &&
+#sh scripts/run_USAD.sh 0 USAD WADI 10 70  100 5 > ./log/USAD_WADI &&
+echo "complete"
