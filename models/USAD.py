@@ -1,3 +1,11 @@
+'''
+Julien Audibert, Pietro Michiardi, Frédéric Guyard, Sébastien Marti, Maria A. Zuluaga:
+USAD: UnSupervised Anomaly Detection on Multivariate Time Series. KDD 2020: 3395-3404
+
+Re-implementation by:
+Dongmin Kim (tommy.dm.kim@gmail.com)
+'''
+
 import torch
 import torch.nn as nn
 

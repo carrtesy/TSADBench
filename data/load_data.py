@@ -363,14 +363,18 @@ class TSADStandardDataset(Dataset):
     def __init__(self, x, y, flag, transform, window_size, stride, window_anomaly):
         super().__init__()
         self.transform = transform
-        self.x = self.transform.fit_transform(x) if flag == "train" else self.transform.transform(x)
-        self.y = y
+        self.len = (x.shape[0] - window_size) // stride + 1
         self.window_size = window_size
         self.stride = stride
         self.window_anomaly = window_anomaly
 
+        x, y = x[:self.len*self.window_size], y[:self.len*self.window_size]
+        self.x = self.transform.fit_transform(x) if flag == "train" else self.transform.transform(x)
+        self.y = y
+
     def __len__(self):
-        return (self.x.shape[0] - self.window_size) // self.stride + 1
+        return self.len
+        #return (self.x.shape[0] - self.window_size) // self.stride + 1
 
     def __getitem__(self, idx):
         _idx = idx * self.stride

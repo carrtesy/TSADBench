@@ -112,7 +112,7 @@ else:
 print("=" * 30)
 print(f"Loading from best path...")
 trainer.load(os.path.join(args.checkpoint_path, f"best.pth"))
-result = trainer.infer(test_dataset, test_loader)
+result = trainer.infer()
 
 print(f"=== Final Result ===")
 for key in result:

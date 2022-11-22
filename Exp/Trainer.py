@@ -7,6 +7,9 @@ from tqdm import tqdm
 import pickle
 from utils.metrics import get_statistics
 from utils.metrics import PA
+from scipy import optimize
+from sklearn.metrics import f1_score, confusion_matrix
+from sklearn.metrics import precision_score, recall_score
 
 class Trainer:
     def __init__(self, args, train_loader, test_loader):
@@ -69,9 +72,9 @@ class Trainer:
         return out
 
     @torch.no_grad()
-    def oracle_thresholding(self, gt, anomaly_scores, samples=100, point_adjust=False):
+    def oracle_thresholding(self, gt, anomaly_scores, point_adjust=False, samples=100000):
         '''
-        Find the threshold that gives best F1.
+        Find the threshold that gives best F1
         '''
 
         m, M = anomaly_scores.min(), anomaly_scores.max()

@@ -1,3 +1,11 @@
+'''
+Jiehui Xu, Haixu Wu, Jianmin Wang, Mingsheng Long:
+Anomaly Transformer: Time Series Anomaly Detection with Association Discrepancy. ICLR 2022
+
+Code Adapted From: https://github.com/thuml/Anomaly-Transformer, By:
+Dongmin Kim (tommy.dm.kim@gmail.com)
+'''
+
 # Trainer
 from Exp.Trainer import Trainer
 
@@ -130,11 +138,13 @@ class AnomalyTransformer_Trainer(Trainer):
 
         return result
 
-    def calculate_anomaly_scores(self, temperature, criterion):
-        test_labels = []
+    def calculate_anomaly_scores(self):
+        temperature = self.args.temperature
+        criterion = nn.MSELoss(reduce=False)
+
         attens_energy = []
         for i, (input_data, labels) in enumerate(self.test_loader):
-            input = input_data.float().to(self.device)
+            input = input_data.float().to(self.args.device)
             output, series, prior, _ = self.model(input)
 
             loss = torch.mean(criterion(input, output), dim=-1)
@@ -143,67 +153,45 @@ class AnomalyTransformer_Trainer(Trainer):
             prior_loss = 0.0
             for u in range(len(prior)):
                 if u == 0:
-                    series_loss = my_kl_loss(series[u], (
-                            prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                   self.win_size)).detach()) * temperature
-                    prior_loss = my_kl_loss(
-                        (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                self.win_size)),
-                        series[u].detach()) * temperature
+                    series_loss = my_kl_loss(series[u], (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)).detach()) * temperature
+                    prior_loss = my_kl_loss((prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)), series[u].detach()) * temperature
                 else:
-                    series_loss += my_kl_loss(series[u], (
-                            prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                   self.win_size)).detach()) * temperature
-                    prior_loss += my_kl_loss(
-                        (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                self.win_size)),
-                        series[u].detach()) * temperature
+                    series_loss += my_kl_loss(series[u], (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)).detach()) * temperature
+                    prior_loss += my_kl_loss((prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)), series[u].detach()) * temperature
             metric = torch.softmax((-series_loss - prior_loss), dim=-1)
 
             cri = metric * loss
             cri = cri.detach().cpu().numpy()
             attens_energy.append(cri)
-            test_labels.append(labels)
 
         attens_energy = np.concatenate(attens_energy, axis=0).reshape(-1)
-        test_labels = np.concatenate(test_labels, axis=0).reshape(-1)
         test_energy = np.array(attens_energy)
         return test_energy
 
     def get_threshold(self, gt, anomaly_scores, point_adjust=False):
         print(f"thresholding with algorithm: {self.args.thresholding}")
-        return self.threshold_function_map[self.args.thresholding](gt, anomaly_scores, point_adjust)
+        return self.threshold_function_map[self.args.thresholding](gt, anomaly_scores, point_adjust=point_adjust)
 
     @torch.no_grad()
     def anomaly_transformer_thresholding(self, gt, anomaly_scores, point_adjust):
-        temperature = 50
+        temperature = self.args.temperature
         criterion = nn.MSELoss(reduce=False)
 
         # (1) statistics on the train set
         attens_energy = []
         for i, (input_data, labels) in enumerate(self.train_loader):
-            input = input_data.float().to(self.device)
+            input = input_data.float().to(self.args.device)
             output, series, prior, _ = self.model(input)
             loss = torch.mean(criterion(input, output), dim=-1)
             series_loss = 0.0
             prior_loss = 0.0
             for u in range(len(prior)):
                 if u == 0:
-                    series_loss = my_kl_loss(series[u], (
-                            prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                   self.win_size)).detach()) * temperature
-                    prior_loss = my_kl_loss(
-                        (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                self.win_size)),
-                        series[u].detach()) * temperature
+                    series_loss = my_kl_loss(series[u], (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)).detach()) * temperature
+                    prior_loss = my_kl_loss((prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)), series[u].detach()) * temperature
                 else:
-                    series_loss += my_kl_loss(series[u], (
-                            prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                   self.win_size)).detach()) * temperature
-                    prior_loss += my_kl_loss(
-                        (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                self.win_size)),
-                        series[u].detach()) * temperature
+                    series_loss += my_kl_loss(series[u], (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)).detach()) * temperature
+                    prior_loss += my_kl_loss((prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)), series[u].detach()) * temperature
 
             metric = torch.softmax((-series_loss - prior_loss), dim=-1)
             cri = metric * loss
@@ -218,7 +206,7 @@ class AnomalyTransformer_Trainer(Trainer):
         # see: https://github.com/thuml/Anomaly-Transformer/issues/32
         attens_energy = []
         for i, (input_data, labels) in enumerate(self.test_loader):
-            input = input_data.float().to(self.device)
+            input = input_data.float().to(self.args.device)
             output, series, prior, _ = self.model(input)
 
             loss = torch.mean(criterion(input, output), dim=-1)
@@ -227,21 +215,11 @@ class AnomalyTransformer_Trainer(Trainer):
             prior_loss = 0.0
             for u in range(len(prior)):
                 if u == 0:
-                    series_loss = my_kl_loss(series[u], (
-                            prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                   self.win_size)).detach()) * temperature
-                    prior_loss = my_kl_loss(
-                        (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                self.win_size)),
-                        series[u].detach()) * temperature
+                    series_loss = my_kl_loss(series[u], (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)).detach()) * temperature
+                    prior_loss = my_kl_loss((prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)), series[u].detach()) * temperature
                 else:
-                    series_loss += my_kl_loss(series[u], (
-                            prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                   self.win_size)).detach()) * temperature
-                    prior_loss += my_kl_loss(
-                        (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                self.win_size)),
-                        series[u].detach()) * temperature
+                    series_loss += my_kl_loss(series[u], (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)).detach()) * temperature
+                    prior_loss += my_kl_loss((prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)), series[u].detach()) * temperature
             # Metric
             metric = torch.softmax((-series_loss - prior_loss), dim=-1)
             cri = metric * loss
