@@ -60,6 +60,8 @@ LOF: Identifying Density-Based Local Outliers. SIGMOD Conference 2000: 93-104](h
 [Audibert, Julien, et al. "Usad: Unsupervised anomaly detection on multivariate time series." Proceedings of the 26th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining. 2020.](https://dl.acm.org/doi/pdf/10.1145/3394486.3403392)
 
 ## References
-
+- OCSVM (Sklearn): https://scikit-learn.org/stable/modules/generated/sklearn.svm.OneClassSVM.html
+- IsolationForest (Sklearn): https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html
+- LOF (Sklearn): https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.LocalOutlierFactor.html
 - LSTMEncDec Implementation: https://joungheekim.github.io/2020/11/14/code-review/ (Explanations in Korean)
 - Anomaly Transformer Github: https://github.com/thuml/Anomaly-Transformer
