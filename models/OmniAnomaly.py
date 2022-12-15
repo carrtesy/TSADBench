@@ -15,7 +15,7 @@ class PlanarNormalizingFlow(nn.Module):
 
 
 class Qnet(nn.Module):
-    def __init__(self, in_dim=4096, hidden_dim=1024, z_dim = 100, dense_dim = 100):
+    def __init__(self, in_dim=4096, hidden_dim=1024, z_dim=100, dense_dim=100):
         super(Qnet, self).__init__()
         self.gru = nn.GRU(in_dim, hidden_dim, num_layers = 1, batch_first=True, bidirectional=False)
         self.z_dim = z_dim
@@ -25,7 +25,7 @@ class Qnet(nn.Module):
         self.linear_mu = nn.Linear(self.dense_dim, self.z_dim)
         self.linear_sigma = nn.Linear(self.dense_dim, self.z_dim)
         self.softplus = nn.Softplus()
-        self.pnf = PlanarNormalizingFlow(dim = self.z_dim)
+        self.pnf = PlanarNormalizingFlow(dim=self.z_dim)
 
     def forward(self, x):
         B, W, F = x.shape

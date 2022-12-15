@@ -71,7 +71,8 @@ class LSTMEncDec_Trainer(Trainer):
         recon_errors = self.reduce(recon_errors)    # (T, )
         mu, var = np.mean(recon_errors), np.cov(recon_errors)
         e = (recon_errors - mu)
-        anomaly_scores = e @ var @ e.T
+        varinv = np.linalg.pinv(var)
+        anomaly_scores = e @ varinv @ e.T
         result = self.get_result(y, anomaly_scores)
         return result
 
