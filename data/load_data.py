@@ -8,12 +8,12 @@ from torch.utils.data import DataLoader, Dataset
 from sklearn import preprocessing
 
 class DataFactory:
-    def __init__(self, args=None):
-        if args is not None:
-            self.args = args
-            self.home_dir = args.home_dir
-            print(f"current location: {os.getcwd()}")
-            print(f"home dir: {args.home_dir}")
+    def __init__(self, args, logger):
+        self.args = args
+        self.logger = logger
+        self.home_dir = args.home_dir
+        self.logger.info(f"current location: {os.getcwd()}")
+        self.logger.info(f"home dir: {args.home_dir}")
 
         self.dataset_fn_dict = {
             "toyUSW": self.load_toyUSW,
@@ -44,7 +44,15 @@ class DataFactory:
         }
 
     def __call__(self):
+        self.logger.info(f"Preparing {self.args.dataset} ...")
         train_x, train_y, test_x, test_y = self.load()
+        self.logger.info(
+            f"train: X - {train_x.shape}, y - {train_y.shape} " +
+            f"test: X - {test_x.shape}, y - {test_y.shape}"
+        )
+        self.logger.info(f"Complete.")
+
+        self.logger.info(f"Preparing dataloader...")
         train_dataset, train_loader, test_dataset, test_loader = self.prepare(
             train_x, train_y, test_x, test_y,
             window_size=self.args.window_size,
@@ -52,11 +60,23 @@ class DataFactory:
             dataset_type=self.args.dataset,
             batch_size=self.args.batch_size,
             eval_batch_size=self.args.eval_batch_size,
-            train_shuffle=False,
+            train_shuffle=True,
             test_shuffle=False,
             scaler=self.args.scaler,
             window_anomaly=self.args.window_anomaly
         )
+
+        sample_X, sample_y = next(iter(train_loader))
+        self.logger.info(f"total train dataset- {len(train_loader)}, "
+                         f"batch_X - {sample_X.shape}, "
+                         f"batch_y - {sample_y.shape}")
+
+        sample_X, sample_y = next(iter(test_loader))
+        self.logger.info(f"total test dataset- {len(test_loader)}, "
+                         f"batch_X - {sample_X.shape}, "
+                         f"batch_y - {sample_y.shape}")
+        self.logger.info(f"Complete.")
+
         return train_dataset, train_loader, test_dataset, test_loader
 
     def load(self):
@@ -87,10 +107,6 @@ class DataFactory:
             shuffle=train_shuffle,
         )
 
-        sample_X, sample_y = next(iter(train_dataloader))
-        print(f"total train dataset- {len(train_dataloader)}, batch_X - {sample_X.shape}, batch_y - {sample_y.shape}")
-
-
         transform = train_dataset.transform
         test_dataset = self.datasets[dataset_type](test_x, test_y,
                                                    flag="test", transform=transform,
@@ -104,15 +120,11 @@ class DataFactory:
             shuffle=test_shuffle,
         )
 
-        sample_X, sample_y = next(iter(test_dataloader))
-        print(f"total test dataset- {len(test_dataloader)}, batch_X - {sample_X.shape}, batch_y - {sample_y.shape}")
 
         return train_dataset, train_dataloader, test_dataset, test_dataloader
 
     @staticmethod
     def load_toyUSW(home_dir="."):
-        print("Reading ToyUSW...")
-
         base_dir = "data/toyUSW"
         with open(os.path.join(home_dir, base_dir, "train.npy"), 'rb') as f:
             train_X = np.load(f)
@@ -127,15 +139,10 @@ class DataFactory:
         train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
         train_y, test_y = train_y.astype(int), test_y.astype(int)
 
-        print(f"train: X - {train_X.shape}, y - {train_y.shape}")
-        print(f"test: X - {test_X.shape}, y - {test_y.shape}")
-        print("Loading complete.")
         return train_X, train_y, test_X, test_y
 
     @staticmethod
     def load_NeurIPS_TS_UNI(home_dir="."):
-        print("Reading NeurIPS-TS...")
-
         base_dir = "data/NeurIPS-TS"
         normal = pd.read_csv(os.path.join(home_dir, base_dir, "nts_uni_normal.csv"))
         abnormal = pd.read_csv(os.path.join(home_dir, base_dir, "nts_uni_abnormal.csv"))
@@ -146,14 +153,10 @@ class DataFactory:
         train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
         train_y, test_y = train_y.astype(int), test_y.astype(int)
 
-        print(f"train: X - {train_X.shape}, y - {train_y.shape}")
-        print(f"test: X - {test_X.shape}, y - {test_y.shape}")
-        print("Loading complete.")
         return train_X, train_y, test_X, test_y
 
     @staticmethod
     def load_NeurIPS_TS_MUL(home_dir="."):
-        print("Reading NeurIPS-TS...")
 
         base_dir = "data/NeurIPS-TS"
         normal = pd.read_csv(os.path.join(home_dir, base_dir, "nts_mul_normal.csv"))
@@ -165,15 +168,11 @@ class DataFactory:
         train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
         train_y, test_y = train_y.astype(int), test_y.astype(int)
 
-        print(f"train: X - {train_X.shape}, y - {train_y.shape}")
-        print(f"test: X - {test_X.shape}, y - {test_y.shape}")
-        print("Loading complete.")
         return train_X, train_y, test_X, test_y
 
 
     @staticmethod
     def load_SWaT(home_dir="."):
-        print("Reading SWaT...")
         base_dir = "data/SWaT"
         SWAT_TRAIN_PATH = os.path.join(home_dir, base_dir, 'SWaT_Dataset_Normal_v0.csv')
         SWAT_TEST_PATH = os.path.join(home_dir, base_dir, 'SWaT_Dataset_Attack_v0.csv')
@@ -196,14 +195,10 @@ class DataFactory:
         train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
         train_y, test_y = train_y.astype(int), test_y.astype(int)
 
-        print(f"train: X - {train_X.shape}, y - {train_y.shape}")
-        print(f"test: X - {test_X.shape}, y - {test_y.shape}")
-        print("Loading complete.")
         return train_X, train_y, test_X, test_y
 
     @staticmethod
     def load_WADI(home_dir="."):
-        print("Reading WADI...")
         base_dir = "data/WADI"
         WADI_TRAIN_PATH = os.path.join(home_dir, base_dir, 'WADI_14days_new.csv')
         WADI_TEST_PATH = os.path.join(home_dir, base_dir, 'WADI_attackdataLABLE.csv')
@@ -236,14 +231,10 @@ class DataFactory:
         train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
         train_y, test_y = train_y.astype(int), test_y.astype(int)
 
-        print(f"train: X - {train_X.shape}, y - {train_y.shape}")
-        print(f"test: X - {test_X.shape}, y - {test_y.shape}")
-        print("Loading complete.")
         return train_X, train_y, test_X, test_y
 
     @staticmethod
-    def load_SMD(home_dir=".") -> ():
-        print("Reading SMD...")
+    def load_SMD(home_dir="."):
         base_dir = "data/SMD"
         with open(os.path.join(home_dir, base_dir, "SMD_train.pkl"), 'rb') as f:
             train_X = pickle.load(f)
@@ -257,14 +248,10 @@ class DataFactory:
         train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
         train_y, test_y = train_y.astype(int), test_y.astype(int)
 
-        print(f"train: X - {train_X.shape}, y - {train_y.shape}")
-        print(f"test: X - {test_X.shape}, y - {test_y.shape}")
-        print("Loading complete.")
         return train_X, train_y, test_X, test_y
 
     @staticmethod
     def load_PSM(home_dir="."):
-        print("Reading PSM...")
         PSM_PATH = os.path.join(home_dir, "data", "PSM")
         df_train_X = pd.read_csv(os.path.join(PSM_PATH, "train.csv"), index_col=0)
         df_test_X = pd.read_csv(os.path.join(PSM_PATH, "test.csv"), index_col=0)
@@ -278,15 +265,10 @@ class DataFactory:
         train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
         train_y, test_y = train_y.astype(int), test_y.astype(int)
 
-        print(f"train: X - {train_X.shape}, y - {train_y.shape}")
-        print(f"test: X - {test_X.shape}, y - {test_y.shape}")
-        print("Loading complete.")
         return train_X, train_y, test_X, test_y
 
     @staticmethod
     def load_SMAP(home_dir="."):
-        print("Reading SMAP...")
-
         base_dir = "data/SMAP"
         with open(os.path.join(home_dir, base_dir, "SMAP_train.pkl"), 'rb') as f:
             train_X = pickle.load(f)
@@ -300,15 +282,10 @@ class DataFactory:
         train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
         train_y, test_y = train_y.astype(int), test_y.astype(int)
 
-        print(f"train: X - {train_X.shape}, y - {train_y.shape}")
-        print(f"test: X - {test_X.shape}, y - {test_y.shape}")
-        print("Loading complete.")
         return train_X, train_y, test_X, test_y
 
     @staticmethod
     def load_MSL(home_dir="."):
-        print("Reading MSL...")
-
         base_dir = "data/MSL"
         with open(os.path.join(home_dir, base_dir, "MSL_train.pkl"), 'rb') as f:
             train_X = pickle.load(f)
@@ -321,10 +298,6 @@ class DataFactory:
 
         train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
         train_y, test_y = train_y.astype(int), test_y.astype(int)
-
-        print(f"train: X - {train_X.shape}, y - {train_y.shape}")
-        print(f"test: X - {test_X.shape}, y - {test_y.shape}")
-        print("Loading complete.")
         return train_X, train_y, test_X, test_y
 
     @staticmethod
@@ -374,7 +347,6 @@ class TSADStandardDataset(Dataset):
 
     def __len__(self):
         return self.len
-        #return (self.x.shape[0] - self.window_size) // self.stride + 1
 
     def __getitem__(self, idx):
         _idx = idx * self.stride

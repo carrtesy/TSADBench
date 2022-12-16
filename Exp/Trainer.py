@@ -2,6 +2,8 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 import copy
+import os
+import wandb
 
 from tqdm import tqdm
 import pickle
@@ -12,8 +14,9 @@ from sklearn.metrics import f1_score, confusion_matrix
 from sklearn.metrics import precision_score, recall_score
 
 class Trainer:
-    def __init__(self, args, train_loader, test_loader):
+    def __init__(self, args, logger, train_loader, test_loader):
         self.args = args
+        self.logger = logger
         self.train_loader = train_loader
         self.test_loader = test_loader
 
@@ -97,9 +100,44 @@ class Trainer:
         return best_threshold
 
 
+class ReconModelTrainer(Trainer):
+    def __init__(self, args, logger, train_loader, test_loader):
+        super(ReconModelTrainer, self).__init__(args, logger, train_loader, test_loader)
+
+    def train(self):
+        wandb.watch(self.model, log="all", log_freq=100)
+        best_train_stats = None
+        for epoch in range(1, self.args.epochs + 1):
+            # train
+            train_stats = self.train_epoch()
+            self.logger.info(f"epoch {epoch} | train_stats: {train_stats}")
+            self.checkpoint(os.path.join(self.args.checkpoint_path, f"epoch{epoch}.pth"))
+
+            if best_train_stats is None or train_stats < best_train_stats:
+                self.logger.info(f"Saving best results @epoch{epoch}")
+                self.checkpoint(os.path.join(self.args.checkpoint_path, f"best.pth"))
+                best_train_stats = train_stats
+        return
+
+    def train_epoch(self):
+        self.model.train()
+        log_freq = len(self.train_loader) // self.args.log_freq
+        train_summary = 0.0
+        for i, batch_data in enumerate(self.train_loader):
+            train_log = self._process_batch(batch_data)
+            if i % log_freq == 0:
+                self.logger.info(f"{train_log}")
+                wandb.log(train_log)
+            train_summary += train_log["summary"]
+        train_summary /= len(self.train_loader)
+        return train_summary
+
+    def _process_batch(self, batch_data) -> dict:
+        pass
+
 class SklearnModelTrainer(Trainer):
-    def __init__(self, args, train_loader, test_loader):
-        super(SklearnModelTrainer, self).__init__(args, train_loader, test_loader)
+    def __init__(self, args, logger, train_loader, test_loader):
+        super(SklearnModelTrainer, self).__init__(args, logger, train_loader, test_loader)
 
     def train(self):
         dataset = self.train_loader.dataset

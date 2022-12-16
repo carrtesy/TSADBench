@@ -25,7 +25,8 @@
 #                                                    #
 ######################################################
 
-
+import wandb
+from utils.logger import make_logger
 import argparse
 from utils.parser import prepare_arguments
 import torch
@@ -36,37 +37,42 @@ from tqdm import tqdm
 from data.load_data import DataFactory
 from Exp.Trainer import *
 from Exp.Sklearn_Baselines import *
+from Exp.ReconBaselines import *
 from Exp.Baselines import *
 from Exp.AnomalyTransformer import AnomalyTransformer_Trainer
 
 from utils.tools import SEED_everything
 SEED_everything(42)
 
-# 1. Argparse
-print("=" * 30)
-print(f"Preparing arguments...")
-parser = argparse.ArgumentParser(description='[TSAD] Time Series Anomaly Detection')
-args = prepare_arguments(parser)
-os.makedirs(args.checkpoint_path, exist_ok=True)
-os.makedirs(args.output_path, exist_ok=True)
-print(args)
-print("done.")
 
-# 2. Data
-print("=" * 30)
-print(f"Preparing {args.dataset} dataset...")
-datafactory = DataFactory(args)
+# Argparse
+parser = argparse.ArgumentParser(description='[TSADBench] Time-series Anomaly Detection Benchmarking')
+args = prepare_arguments(parser)
+
+# WANDB
+wandb.login()
+WANDB_PROJECT_NAME, WANDB_ENTITY = "TSADBench", "carrtesy"
+wandb.init(project=WANDB_PROJECT_NAME, entity=WANDB_ENTITY, name=args.exp_id)
+wandb.config = args
+
+# Logger
+logger = make_logger(os.path.join(args.logging_path, f'{args.exp_id}.log'))
+logger.info(f"Configurations: {args}")
+
+# Data
+logger.info(f"Preparing {args.dataset} dataset...")
+datafactory = DataFactory(args, logger)
 train_dataset, train_loader, test_dataset, test_loader = datafactory()
 args.num_channels = train_dataset.x.shape[1]
 
-
-# 3. Model
-print("=" * 30)
-print(f"Preparing {args.model} Trainer...")
+# Model
+logger.info(f"Preparing {args.model} Trainer...")
 Trainers = {
     "OCSVM": OCSVM_Trainer,
     "IsolationForest": IsolationForest_Trainer,
     "LOF": LOF_Trainer,
+    "AE": AE_Trainer,
+    "VAE": VAE_Trainer,
     "USAD": USAD_Trainer,
     "AnomalyTransformer": AnomalyTransformer_Trainer,
     #"MAE": MAE_Trainer,
@@ -76,44 +82,19 @@ Trainers = {
 
 trainer = Trainers[args.model](
     args=args,
+    logger=logger,
     train_loader=train_loader,
     test_loader=test_loader,
 )
 
 # 4. train
-print("=" * 30)
-print(f"Preparing {args.model} Training...")
-
-
-if args.epochs > 0:
-    epochs = tqdm(range(args.epochs))
-    best_train_stats = None
-    for epoch in epochs:
-        # train
-        train_stats = trainer.train()
-        print(f"train_stats: {train_stats}")
-        trainer.checkpoint(os.path.join(args.checkpoint_path, f"epoch{epoch}.pth"))
-
-        if args.eval_every_epoch:
-            result = trainer.infer()
-            print(f"=== Result @epoch{epoch} ===")
-            for key in result:
-                print(f"{key}: {result[key]}")
-
-        if best_train_stats is None or train_stats < best_train_stats:
-            print(f"Saving best results @epoch{epoch}")
-            trainer.checkpoint(os.path.join(args.checkpoint_path, f"best.pth"))
-            best_train_stats = train_stats
-else:
-    trainer.train(train_dataset, train_loader)
-    trainer.checkpoint(os.path.join(args.checkpoint_path, f"best.pth"))
+logger.info(f"Preparing {args.model} Training...")
+trainer.train()
 
 # 5. infer
-print("=" * 30)
-print(f"Loading from best path...")
+logger.info(f"Loading from best path...")
 trainer.load(os.path.join(args.checkpoint_path, f"best.pth"))
 result = trainer.infer()
-
-print(f"=== Final Result ===")
+logger.info(f"=== Final Result ===")
 for key in result:
-    print(f"{key}: {result[key]}")
+    logger.info(f"{key}: {result[key]}")

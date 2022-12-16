@@ -21,8 +21,11 @@ def prepare_arguments(parser):
     parser.add_argument("--window_anomaly", action="store_true", help=f"window-base anomaly")
     parser.add_argument("--eval_every_epoch", action="store_true", help=f"evaluate every epoch")
 
+
     # save
+    parser.add_argument("--log_freq", type=int, default=10)
     parser.add_argument("--checkpoints", type=str, default="./checkpoints")
+    parser.add_argument("--logs", type=str, default="./logs")
     parser.add_argument("--outputs", type=str, default="./outputs")
 
     # thresholding
@@ -45,6 +48,16 @@ def prepare_arguments(parser):
     ## LOF
     LOF_parser = subparser.add_parser("LOF")
 
+    ## AE
+    AE_parser = subparser.add_parser("AE")
+    AE_parser.add_argument("--latent_dim", type=int, required=True, default=40, help=f"Encoder, decoder hidden dim")
+    AE_parser.add_argument("--anomaly_reduction_mode", type=str, default="mean")
+
+    ## VAE
+    VAE_parser = subparser.add_parser("VAE")
+    VAE_parser.add_argument("--latent_dim", type=int, required=True, default=40, help=f"Encoder, decoder hidden dim")
+    VAE_parser.add_argument("--anomaly_reduction_mode", type=str, default="mean")
+
     ## USAD
     USAD_parser = subparser.add_parser("USAD")
     USAD_parser.add_argument("--latent_dim", type=int, required=True, default=40, help=f"Encoder, decoder hidden dim")
@@ -64,7 +77,13 @@ def prepare_arguments(parser):
     '''
     args = parser.parse_args()
     args.checkpoint_path = os.path.join(args.checkpoints, f"{args.exp_id}")
+    args.logging_path = os.path.join(args.logs, f"{args.exp_id}")
     args.output_path = os.path.join(args.outputs, f"{args.exp_id}")
+
+    os.makedirs(args.checkpoint_path, exist_ok=True)
+    os.makedirs(args.logging_path, exist_ok=True)
+    os.makedirs(args.output_path, exist_ok=True)
+
     args.home_dir = "."
     args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
