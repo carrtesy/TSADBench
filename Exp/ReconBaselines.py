@@ -48,16 +48,6 @@ class AE_Trainer(ReconModelTrainer):
         }
         return out
 
-    @torch.no_grad()
-    def infer(self):
-        self.model.eval()
-        y = self.test_loader.dataset.y
-        recon_errors = self.calculate_recon_errors()    # (B, L, C)
-        recon_errors = self.reduce(recon_errors)    # (T, )
-        anomaly_scores = recon_errors
-        result = self.get_result(y, anomaly_scores)
-        return result
-
     def calculate_recon_errors(self):
         '''
         :param dataloader: eval dataloader
@@ -66,13 +56,14 @@ class AE_Trainer(ReconModelTrainer):
         eval_iterator = tqdm(
             self.test_loader,
             total=len(self.test_loader),
-            desc="infer",
+            desc="calculating reconstruction errors",
             leave=True
         )
         recon_errors = []
         for i, batch_data in enumerate(eval_iterator):
             X = batch_data[0].to(self.args.device)
-            Xhat = self.model(X)
+            B, L, C = X.shape
+            Xhat = self.model(X.reshape(B, L*C)).reshape(B, L, C)
             recon_error = F.mse_loss(Xhat, X, reduction='none').to("cpu")
             recon_errors.append(recon_error)
         recon_errors = np.concatenate(recon_errors, axis=0)
@@ -115,16 +106,6 @@ class VAE_Trainer(ReconModelTrainer):
         }
         return out
 
-    @torch.no_grad()
-    def infer(self):
-        self.model.eval()
-        y = self.test_loader.dataset.y
-        recon_errors = self.calculate_recon_errors()    # (B, L, C)
-        recon_errors = self.reduce(recon_errors)    # (T, )
-        anomaly_scores = recon_errors
-        result = self.get_result(y, anomaly_scores)
-        return result
-
     def calculate_recon_errors(self):
         '''
         :param dataloader: eval dataloader
@@ -133,13 +114,15 @@ class VAE_Trainer(ReconModelTrainer):
         eval_iterator = tqdm(
             self.test_loader,
             total=len(self.test_loader),
-            desc="infer",
+            desc="calculating reconstruction errors",
             leave=True
         )
         recon_errors = []
         for i, batch_data in enumerate(eval_iterator):
             X = batch_data[0].to(self.args.device)
-            Xhat = self.model(X)
+            B, L, C = X.shape
+            Xhat, _, _ = self.model(X.reshape(B, L*C))
+            Xhat = Xhat.reshape(B, L, C)
             recon_error = F.mse_loss(Xhat, X, reduction='none').to("cpu")
             recon_errors.append(recon_error)
         recon_errors = np.concatenate(recon_errors, axis=0)

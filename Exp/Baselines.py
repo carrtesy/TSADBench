@@ -1,5 +1,7 @@
+import wandb
+
 # Trainer
-from Exp.Trainer import Trainer
+from Exp.Trainer import Trainer, ReconModelTrainer
 
 # models
 from models.LSTMEncDec import LSTMEncDec
@@ -84,7 +86,7 @@ class LSTMEncDec_Trainer(Trainer):
         eval_iterator = tqdm(
             self.test_loader,
             total=len(self.test_loader),
-            desc="infer",
+            desc="calculating reconstruction errors",
             leave=True
         )
         recon_errors = []
@@ -96,9 +98,9 @@ class LSTMEncDec_Trainer(Trainer):
         recon_errors = np.concatenate(recon_errors, axis=0)
         return recon_errors
 
-class USAD_Trainer(Trainer):
-    def __init__(self, args, train_loader, test_loader):
-        super(USAD_Trainer, self).__init__(args=args, train_loader=train_loader, test_loader=test_loader)
+class USAD_Trainer(ReconModelTrainer):
+    def __init__(self, args, logger, train_loader, test_loader):
+        super(USAD_Trainer, self).__init__(args=args, logger=logger, train_loader=train_loader, test_loader=test_loader)
 
         # assert moving average output to be same as input
         assert self.args.dsr % 2
@@ -118,27 +120,21 @@ class USAD_Trainer(Trainer):
         self.optimizer2 = torch.optim.Adam(params=self.model.parameters(), lr=args.lr)
         self.epoch = 0
 
-
-    def train(self):
+    def train_epoch(self):
         self.model.train()
-        train_iterator = tqdm(
-            self.train_loader,
-            total=len(self.train_loader),
-            desc="training",
-            leave=True
-        )
-
+        log_freq = len(self.train_loader) // self.args.log_freq
         train_summary = 0.0
-        for i, batch_data in enumerate(train_iterator):
+        for i, batch_data in enumerate(self.train_loader):
             train_log = self._process_batch(batch_data, self.epoch+1)
-            train_iterator.set_postfix(train_log)
+            if (i+1) % log_freq == 0:
+                self.logger.info(f"{train_log}")
+                wandb.log(train_log)
             train_summary += train_log["summary"]
-
-        train_summary /= len(train_iterator)
+        train_summary /= len(self.train_loader)
         self.epoch += 1
         return train_summary
 
-    def _process_batch(self, batch_data, epoch):
+    def _process_batch(self, batch_data, epoch) -> dict:
         X = batch_data[0].to(self.args.device)
         X = self.moving_avg(X.transpose(-1, -2)).transpose(-1, -2)
 
@@ -173,34 +169,25 @@ class USAD_Trainer(Trainer):
         }
         return out
 
-    @torch.no_grad()
-    def infer(self):
-        self.model.eval()
-        y = self.test_loader.dataset.y
-        anomaly_scores = self.calculate_anomaly_scores(self.test_loader)
-        anomaly_scores = self.reduce(anomaly_scores)
-        result = self.get_result(y, anomaly_scores)
-        return result
-
-    def calculate_anomaly_scores(self):
+    def calculate_recon_errors(self):
         '''
         :return:  returns (B, L, C) recon loss tensor
         '''
         eval_iterator = tqdm(
             self.test_loader,
             total=len(self.test_loader),
-            desc="infer",
+            desc="calculating reconstruction errors",
             leave=True
         )
-        anomaly_scores = []
+        recon_errors = []
         for i, batch_data in enumerate(eval_iterator):
             X = batch_data[0].to(self.args.device)
-            anomaly_score = self.anomaly_score_calculator(X, self.args.alpha, self.args.beta).to("cpu")
-            anomaly_scores.append(anomaly_score)
-        anomaly_scores = np.concatenate(anomaly_scores, axis=0)
-        return anomaly_scores
+            recon_error = self.recon_error_criterion(X, self.args.alpha, self.args.beta).to("cpu")
+            recon_errors.append(recon_error)
+        recon_errors = np.concatenate(recon_errors, axis=0)
+        return recon_errors
 
-    def anomaly_score_calculator(self, Wt, alpha=0.5, beta=0.5):
+    def recon_error_criterion(self, Wt, alpha=0.5, beta=0.5):
         '''
         :param Wt: model input
         :param alpha: low detection sensitivity

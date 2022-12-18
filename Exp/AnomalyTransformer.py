@@ -95,41 +95,6 @@ class AnomalyTransformer_Trainer(Trainer):
 
             adjust_learning_rate(self.optimizer, epoch + 1, self.args.lr)
 
-    # code referrence:
-    # https://github.com/thuml/Anomaly-Transformer/blob/72a71e5f0847bd14ba0253de899f7b0d5ba6ee97/solver.py#L207
-    @torch.no_grad()
-    def infer(self):
-        result = {}
-        self.model.eval()
-        gt = self.test_loader.dataset.y
-        anomaly_scores = self.calculate_anomaly_scores()
-
-        # F1
-        threshold = self.get_threshold(gt=gt, anomaly_scores=anomaly_scores)
-        pred = (anomaly_scores > threshold).astype(int)
-        cm, a, p, r, f1 = get_statistics(gt, pred)
-        result.update({
-            "Threshold": threshold,
-            "Confusion Matrix": cm.ravel(),
-            "Precision": p,
-            "Recall": r,
-            "F1": f1,
-        })
-
-        # F1-PA
-        threshold = self.get_threshold(gt=gt, anomaly_scores=anomaly_scores, point_adjust=True)
-        pred = (anomaly_scores > threshold).astype(int)
-        pa_pred = PA(gt, pred)
-        cm, a, p, r, f1 = get_statistics(gt, pa_pred)
-        result.update({
-            "Threshold (PA)": threshold,
-            "Confusion Matrix (PA)": cm.ravel(),
-            "Precision (PA)": p,
-            "Recall (PA)": r,
-            "F1 (PA)": f1,
-        })
-
-        return result
 
     def calculate_anomaly_scores(self):
         temperature = self.args.temperature
@@ -160,6 +125,7 @@ class AnomalyTransformer_Trainer(Trainer):
         attens_energy = np.concatenate(attens_energy, axis=0).reshape(-1)
         test_energy = np.array(attens_energy)
         return test_energy
+
 
     def get_threshold(self, gt, anomaly_scores, point_adjust=False):
         print(f"thresholding with algorithm: {self.args.thresholding}")

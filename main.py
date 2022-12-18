@@ -53,7 +53,7 @@ args = prepare_arguments(parser)
 wandb.login()
 WANDB_PROJECT_NAME, WANDB_ENTITY = "TSADBench", "carrtesy"
 wandb.init(project=WANDB_PROJECT_NAME, entity=WANDB_ENTITY, name=args.exp_id)
-wandb.config = args
+wandb.config.update(args)
 
 # Logger
 logger = make_logger(os.path.join(args.logging_path, f'{args.exp_id}.log'))
@@ -95,6 +95,7 @@ trainer.train()
 logger.info(f"Loading from best path...")
 trainer.load(os.path.join(args.checkpoint_path, f"best.pth"))
 result = trainer.infer()
+wandb.log(result)
 logger.info(f"=== Final Result ===")
 for key in result:
     logger.info(f"{key}: {result[key]}")
