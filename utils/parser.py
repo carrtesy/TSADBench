@@ -20,7 +20,7 @@ def prepare_arguments(parser):
     parser.add_argument("--scaler", type=str, default="std")
     parser.add_argument("--window_anomaly", action="store_true", help=f"window-base anomaly")
     parser.add_argument("--eval_every_epoch", action="store_true", help=f"evaluate every epoch")
-
+    parser.add_argument("--anomaly_reduction_mode", type=str, default="mean")
 
     # save
     parser.add_argument("--log_freq", type=int, default=10)
@@ -51,12 +51,18 @@ def prepare_arguments(parser):
     ## AE
     AE_parser = subparser.add_parser("AE")
     AE_parser.add_argument("--latent_dim", type=int, required=True, default=40, help=f"Encoder, decoder hidden dim")
-    AE_parser.add_argument("--anomaly_reduction_mode", type=str, default="mean")
 
     ## VAE
     VAE_parser = subparser.add_parser("VAE")
     VAE_parser.add_argument("--latent_dim", type=int, required=True, default=40, help=f"Encoder, decoder hidden dim")
-    VAE_parser.add_argument("--anomaly_reduction_mode", type=str, default="mean")
+
+    ## LSTMEncDec
+    LSTMEncDec_parser = subparser.add_parser("LSTMEncDec")
+    LSTMEncDec_parser.add_argument("--latent_dim", type=int, default=128, help=f"Encoder, decoder hidden dim")
+    LSTMEncDec_parser.add_argument("--num_layers", type=int, default=3,
+                                   help=f"The number of hidden layers.")
+    LSTMEncDec_parser.add_argument("--dropout", type=float, default=0.1, help=f"dropout")
+    LSTMEncDec_parser.add_argument("--subseq_length", type=float, default=100, help=f"subseq length when calculating mahalanobis distance (for cov matrix computation)")
 
     ## USAD
     USAD_parser = subparser.add_parser("USAD")
@@ -64,7 +70,6 @@ def prepare_arguments(parser):
     USAD_parser.add_argument("--alpha", type=float, required=False, default=0.1, help=f"alpha")
     USAD_parser.add_argument("--beta", type=float, required=False, default=0.9, help=f"beta")
     USAD_parser.add_argument("--dsr", type=int, default=5, help="down sampling rate")
-    USAD_parser.add_argument("--anomaly_reduction_mode", type=str, default="mean")
 
     ## AnomalyTransformer
     AnomalyTransformer_parser = subparser.add_parser("AnomalyTransformer")

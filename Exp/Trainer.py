@@ -22,9 +22,6 @@ class Trainer:
             "oracle": self.oracle_thresholding,
         }
 
-    def train(self, dataset, dataloader):
-        pass
-
     @torch.no_grad()
     def infer(self):
         result = {}
@@ -136,95 +133,3 @@ class Trainer:
         best_threshold = thresholds[idx]
         self.logger.info(f"Best threshold found at: {best_threshold}, with fpr: {fpr[idx]}, tpr: {tpr[idx]}")
         return best_threshold
-
-class ReconModelTrainer(Trainer):
-    def __init__(self, args, logger, train_loader, test_loader):
-        super(ReconModelTrainer, self).__init__(args, logger, train_loader, test_loader)
-
-    def train(self):
-        wandb.watch(self.model, log="all", log_freq=100)
-        best_train_stats = None
-        for epoch in range(1, self.args.epochs + 1):
-            # train
-            train_stats = self.train_epoch()
-            self.logger.info(f"epoch {epoch} | train_stats: {train_stats}")
-            self.checkpoint(os.path.join(self.args.checkpoint_path, f"epoch{epoch}.pth"))
-
-            if best_train_stats is None or train_stats < best_train_stats:
-                self.logger.info(f"Saving best results @epoch{epoch}")
-                self.checkpoint(os.path.join(self.args.checkpoint_path, f"best.pth"))
-                best_train_stats = train_stats
-        return
-
-    def train_epoch(self):
-        self.model.train()
-        log_freq = len(self.train_loader) // self.args.log_freq
-        train_summary = 0.0
-        for i, batch_data in enumerate(self.train_loader):
-            train_log = self._process_batch(batch_data)
-            if (i+1) % log_freq == 0:
-                self.logger.info(f"{train_log}")
-                wandb.log(train_log)
-            train_summary += train_log["summary"]
-        train_summary /= len(self.train_loader)
-        return train_summary
-
-    def calculate_anomaly_scores(self):
-        recon_errors = self.calculate_recon_errors()
-        anomaly_scores = self.reduce(recon_errors)
-        return anomaly_scores
-
-class SklearnModelTrainer(Trainer):
-    def __init__(self, args, logger, train_loader, test_loader):
-        super(SklearnModelTrainer, self).__init__(args, logger, train_loader, test_loader)
-
-    def train(self):
-        X = self.train_loader.dataset.x
-        self.model.fit(X)
-
-    def infer(self):
-        result = {}
-        self.model.eval()
-        X, gt = self.test_loader.dataset.X, self.test_loader.dataset.y
-
-        # In sklearn, 1 is normal and -1 is abnormal. convert to 1 (abnormal) or 0 (normal)
-        yhat = (self.model.predict(X) == -1)
-
-        # F1
-        acc = accuracy_score(gt, yhat)
-        p = precision_score(gt, yhat, zero_division=1)
-        r = recall_score(gt, yhat, zero_division=1)
-        f1 = f1_score(gt, yhat, zero_division=1)
-
-        result.update({
-            "Accuracy": acc,
-            "Precision": p,
-            "Recall": r,
-            "F1": f1,
-        })
-
-        wandb.log({"Confusion Matrix": wandb.plot.confusion_matrix(gt, pred)})
-
-        # F1-PA
-        pa_pred = PA(gt, yhat)
-        acc = accuracy_score(gt, pa_pred)
-        p = precision_score(gt, pa_pred, zero_division=1)
-        r = recall_score(gt, pa_pred, zero_division=1)
-        f1 = f1_score(gt, pa_pred, zero_division=1)
-        result.update({
-            "Precision (PA)": p,
-            "Recall (PA)": r,
-            "F1 (PA)": f1,
-        })
-
-        wandb.log({"Confusion Matrix (PA)": wandb.plot.confusion_matrix(gt, pa_pred)})
-
-        return result
-
-    def checkpoint(self, filepath):
-        with open(filepath, "wb") as f:
-            pickle.dump(self.model, f)
-
-    def load(self, filepath):
-        with open(filepath, "rb") as f:
-            self.model = pickle.load(f)

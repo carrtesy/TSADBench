@@ -8,8 +8,8 @@ python main.py \
   --dataset $3 \
   --window_size $4 \
   --epochs $5 \
-  --scaler std \
+  --scaler minmax \
+  --anomaly_reduction_mode mean \
   $2 \
   --latent_dim $6 \
-  --anomaly_reduction_mode mean \
   --dsr $7

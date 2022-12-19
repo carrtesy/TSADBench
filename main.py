@@ -36,10 +36,9 @@ import numpy as np
 from tqdm import tqdm
 from data.load_data import DataFactory
 from Exp.Trainer import *
-from Exp.Sklearn_Baselines import *
+from Exp.SklearnBaselines import *
 from Exp.ReconBaselines import *
 from Exp.Baselines import *
-from Exp.AnomalyTransformer import AnomalyTransformer_Trainer
 
 from utils.tools import SEED_everything
 SEED_everything(42)
@@ -73,6 +72,7 @@ Trainers = {
     "LOF": LOF_Trainer,
     "AE": AE_Trainer,
     "VAE": VAE_Trainer,
+    "LSTMEncDec": LSTMEncDec_Trainer,
     "USAD": USAD_Trainer,
     "AnomalyTransformer": AnomalyTransformer_Trainer,
     #"MAE": MAE_Trainer,

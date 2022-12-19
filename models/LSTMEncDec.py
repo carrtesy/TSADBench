@@ -9,26 +9,26 @@ import torch
 import torch.nn as nn
 
 class Encoder(nn.Module):
-    def __init__(self, input_size=4096, hidden_size=1024, num_layers=2):
+    def __init__(self, input_size, hidden_size, num_layers, dropout):
         super(Encoder, self).__init__()
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True,
-                            dropout=0.1, bidirectional=False)
+                            dropout=dropout, bidirectional=False)
 
     def forward(self, x):
         outputs, (hidden, cell) = self.lstm(x)  # out: tensor of shape (batch_size, seq_length, hidden_size)
         return (hidden, cell)
 
 class Decoder(nn.Module):
-    def __init__(self, input_size=4096, hidden_size=1024, output_size=4096, num_layers=2):
+    def __init__(self, input_size, hidden_size, output_size, num_layers, dropout):
         super(Decoder, self).__init__()
         self.hidden_size = hidden_size
         self.output_size = output_size
         self.num_layers = num_layers
 
         self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True,
-                            dropout=0.1, bidirectional=False)
+                            dropout=dropout, bidirectional=False)
 
         self.relu = nn.ReLU()
         self.fc = nn.Linear(hidden_size, output_size)
@@ -42,9 +42,11 @@ class Decoder(nn.Module):
 class LSTMEncDec(nn.Module):
     def __init__(self,
                  input_dim,
-                 latent_dim,
                  window_size,
-                 num_layers):
+                 latent_dim=128,
+                 num_layers=3,
+                 dropout=0.1,
+                 ):
         """
         :param input_dim: # of input variables
         :param latent_dim: hidden dimension
@@ -62,12 +64,14 @@ class LSTMEncDec(nn.Module):
             input_size=input_dim,
             hidden_size=latent_dim,
             num_layers=num_layers,
+            dropout=dropout
         )
         self.reconstruct_decoder = Decoder(
             input_size=input_dim,
             output_size=input_dim,
             hidden_size=latent_dim,
             num_layers=num_layers,
+            dropout=dropout
         )
 
     def forward(self, src):

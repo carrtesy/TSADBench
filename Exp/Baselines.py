@@ -1,201 +1,192 @@
 import wandb
 
 # Trainer
-from Exp.Trainer import Trainer, ReconModelTrainer
+from Exp.Trainer import Trainer
 
 # models
-from models.LSTMEncDec import LSTMEncDec
-from models.USAD import USAD
-
+from models.AnomalyTransformer import AnomalyTransformer
 
 # utils
 from utils.metrics import get_statistics
+from utils.metrics import PA
+from utils.optim import adjust_learning_rate
+from utils.custom_loss import my_kl_loss
+
 
 # others
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
+import time
+import os
 
 from tqdm import tqdm
 import pickle
 
-class LSTMEncDec_Trainer(Trainer):
+class AnomalyTransformer_Trainer(Trainer):
     def __init__(self, args, train_loader, test_loader):
-        super(LSTMEncDec_Trainer, self).__init__(args=args, train_loader=train_loader, test_loader=test_loader)
-
-        self.model = LSTMEncDec(
-            input_dim=self.args.num_channels,
-            latent_dim=self.args.latent_dim,
-            window_size=self.args.window_size,
+        super(AnomalyTransformer_Trainer, self).__init__(args=args, train_loader=train_loader, test_loader=test_loader)
+        self.model = AnomalyTransformer(
+            win_size=self.args.window_size,
+            enc_in=args.num_channels,
+            c_out=args.num_channels,
+            e_layers=3,
         ).to(self.args.device)
-
-        self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.args.lr)
-
-    def train(self, dataset, dataloader):
-        self.model.train()
-        train_iterator = tqdm(
-            self.train_loader,
-            total=len(self.train_loader),
-            desc="training",
-            leave=True
-        )
-
-        train_summary = 0.0
-        for i, batch_data in enumerate(train_iterator):
-            train_log = self._process_batch(batch_data)
-            train_iterator.set_postfix(train_log)
-            train_summary += train_log["summary"]
-        train_summary /= len(train_iterator)
-        return train_summary
-
-    def _process_batch(self, batch_data):
-        X = batch_data[0].to(self.args.device)
-        B, L, C = X.shape
-
-        Xhat = self.model(X)
-        self.optimizer.zero_grad()
-        loss = F.mse_loss(Xhat, X)
-        loss.backward()
-        self.optimizer.step()
-
-        out = {
-            "loss": loss.item(),
-            "summary": loss.item(),
+        self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=args.lr)
+        self.threshold_function_map = {
+            "oracle": self.oracle_thresholding,
+            "anomaly_transformer": self.anomaly_transformer_thresholding,
         }
-        return out
+        self.criterion = nn.MSELoss()
+
+    # code referrence:
+    # https://github.com/thuml/Anomaly-Transformer/blob/72a71e5f0847bd14ba0253de899f7b0d5ba6ee97/solver.py#L130
+    def train(self):
+        self.model.train()
+        time_now = time.time()
+        train_steps = len(self.train_loader)
+
+        for epoch in range(self.args.epochs):
+            iter_count = 0
+            loss1_list = []
+            epoch_time = time.time()
+            self.model.train()
+            for i, (input_data, labels) in enumerate(self.train_loader):
+
+                self.optimizer.zero_grad()
+                iter_count += 1
+                input = input_data.float().to(self.args.device)
+                output, series, prior, _ = self.model(input)
+
+                # calculate Association discrepancy
+                series_loss = 0.0
+                prior_loss = 0.0
+                for u in range(len(prior)):
+                    series_loss += (torch.mean(my_kl_loss(series[u], (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)).detach()))
+                                    + torch.mean(my_kl_loss((prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,self.args.window_size)).detach(), series[u])))
+                    prior_loss += (torch.mean(my_kl_loss((prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)),series[u].detach()))
+                                   + torch.mean(my_kl_loss(series[u].detach(), (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)))))
+                series_loss = series_loss / len(prior)
+                prior_loss = prior_loss / len(prior)
+
+                rec_loss = self.criterion(output, input)
+
+                loss1_list.append((rec_loss - self.args.k * series_loss).item())
+                loss1 = rec_loss - self.args.k * series_loss
+                loss2 = rec_loss + self.args.k * prior_loss
+
+                if (i + 1) % 100 == 0:
+                    speed = (time.time() - time_now) / iter_count
+                    left_time = speed * ((self.args.epochs - epoch) * train_steps - i)
+                    print('\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))
+                    iter_count = 0
+                    time_now = time.time()
+
+                # Minimax strategy
+                loss1.backward(retain_graph=True)
+                loss2.backward()
+                self.optimizer.step()
+
+            print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
+            train_loss = np.average(loss1_list)
+
+            print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} ".format(epoch + 1, train_steps, train_loss))
+
+            adjust_learning_rate(self.optimizer, epoch + 1, self.args.lr)
+
+
+    def calculate_anomaly_scores(self):
+        temperature = self.args.temperature
+        criterion = nn.MSELoss(reduce=False)
+
+        attens_energy = []
+        for i, (input_data, labels) in enumerate(self.test_loader):
+            input = input_data.float().to(self.args.device)
+            output, series, prior, _ = self.model(input)
+
+            loss = torch.mean(criterion(input, output), dim=-1)
+
+            series_loss = 0.0
+            prior_loss = 0.0
+            for u in range(len(prior)):
+                if u == 0:
+                    series_loss = my_kl_loss(series[u], (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)).detach()) * temperature
+                    prior_loss = my_kl_loss((prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)), series[u].detach()) * temperature
+                else:
+                    series_loss += my_kl_loss(series[u], (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)).detach()) * temperature
+                    prior_loss += my_kl_loss((prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)), series[u].detach()) * temperature
+            metric = torch.softmax((-series_loss - prior_loss), dim=-1)
+
+            cri = metric * loss
+            cri = cri.detach().cpu().numpy()
+            attens_energy.append(cri)
+
+        attens_energy = np.concatenate(attens_energy, axis=0).reshape(-1)
+        test_energy = np.array(attens_energy)
+        return test_energy
+
+
+    def get_threshold(self, gt, anomaly_scores, point_adjust=False):
+        print(f"thresholding with algorithm: {self.args.thresholding}")
+        return self.threshold_function_map[self.args.thresholding](gt, anomaly_scores, point_adjust=point_adjust)
 
     @torch.no_grad()
-    def infer(self):
-        self.model.eval()
-        y = self.test_loader.dataset.y
-        recon_errors = self.calculate_recon_errors()    # (B, L, C)
-        recon_errors = self.reduce(recon_errors)    # (T, )
-        mu, var = np.mean(recon_errors), np.cov(recon_errors)
-        e = (recon_errors - mu)
-        varinv = np.linalg.pinv(var)
-        anomaly_scores = e @ varinv @ e.T
-        result = self.get_result(y, anomaly_scores)
-        return result
+    def anomaly_transformer_thresholding(self, gt, anomaly_scores, point_adjust):
+        temperature = self.args.temperature
+        criterion = nn.MSELoss(reduce=False)
 
-    def calculate_recon_errors(self):
-        '''
-        :param dataloader: eval dataloader
-        :return:  returns (B, L, C) recon loss tensor
-        '''
-        eval_iterator = tqdm(
-            self.test_loader,
-            total=len(self.test_loader),
-            desc="calculating reconstruction errors",
-            leave=True
-        )
-        recon_errors = []
-        for i, batch_data in enumerate(eval_iterator):
-            X = batch_data[0].to(self.args.device)
-            Xhat = self.model(X)
-            recon_error = F.mse_loss(Xhat, X, reduction='none').to("cpu")
-            recon_errors.append(recon_error)
-        recon_errors = np.concatenate(recon_errors, axis=0)
-        return recon_errors
+        # (1) statistics on the train set
+        attens_energy = []
+        for i, (input_data, labels) in enumerate(self.train_loader):
+            input = input_data.float().to(self.args.device)
+            output, series, prior, _ = self.model(input)
+            loss = torch.mean(criterion(input, output), dim=-1)
+            series_loss = 0.0
+            prior_loss = 0.0
+            for u in range(len(prior)):
+                if u == 0:
+                    series_loss = my_kl_loss(series[u], (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)).detach()) * temperature
+                    prior_loss = my_kl_loss((prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)), series[u].detach()) * temperature
+                else:
+                    series_loss += my_kl_loss(series[u], (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)).detach()) * temperature
+                    prior_loss += my_kl_loss((prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)), series[u].detach()) * temperature
 
-class USAD_Trainer(ReconModelTrainer):
-    def __init__(self, args, logger, train_loader, test_loader):
-        super(USAD_Trainer, self).__init__(args=args, logger=logger, train_loader=train_loader, test_loader=test_loader)
+            metric = torch.softmax((-series_loss - prior_loss), dim=-1)
+            cri = metric * loss
+            cri = cri.detach().cpu().numpy()
+            attens_energy.append(cri)
 
-        # assert moving average output to be same as input
-        assert self.args.dsr % 2
-        self.moving_avg = torch.nn.AvgPool1d(
-            kernel_size=self.args.dsr,
-            stride=1,
-            padding=(self.args.dsr - 1)//2,
-            count_include_pad=False,
-        ).to(self.args.device)
+        attens_energy = np.concatenate(attens_energy, axis=0).reshape(-1)
+        train_energy = np.array(attens_energy)
 
-        self.model = USAD(
-            input_size=args.window_size * args.num_channels,
-            latent_space_size=args.latent_dim,
-        ).to(self.args.device)
+        # (2) find the threshold
+        # test loader is set as threshold loader
+        # see: https://github.com/thuml/Anomaly-Transformer/issues/32
+        attens_energy = []
+        for i, (input_data, labels) in enumerate(self.test_loader):
+            input = input_data.float().to(self.args.device)
+            output, series, prior, _ = self.model(input)
 
-        self.optimizer1 = torch.optim.Adam(params=self.model.parameters(), lr=args.lr)
-        self.optimizer2 = torch.optim.Adam(params=self.model.parameters(), lr=args.lr)
-        self.epoch = 0
+            loss = torch.mean(criterion(input, output), dim=-1)
 
-    def train_epoch(self):
-        self.model.train()
-        log_freq = len(self.train_loader) // self.args.log_freq
-        train_summary = 0.0
-        for i, batch_data in enumerate(self.train_loader):
-            train_log = self._process_batch(batch_data, self.epoch+1)
-            if (i+1) % log_freq == 0:
-                self.logger.info(f"{train_log}")
-                wandb.log(train_log)
-            train_summary += train_log["summary"]
-        train_summary /= len(self.train_loader)
-        self.epoch += 1
-        return train_summary
+            series_loss = 0.0
+            prior_loss = 0.0
+            for u in range(len(prior)):
+                if u == 0:
+                    series_loss = my_kl_loss(series[u], (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)).detach()) * temperature
+                    prior_loss = my_kl_loss((prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)), series[u].detach()) * temperature
+                else:
+                    series_loss += my_kl_loss(series[u], (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)).detach()) * temperature
+                    prior_loss += my_kl_loss((prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)), series[u].detach()) * temperature
+            # Metric
+            metric = torch.softmax((-series_loss - prior_loss), dim=-1)
+            cri = metric * loss
+            cri = cri.detach().cpu().numpy()
+            attens_energy.append(cri)
 
-    def _process_batch(self, batch_data, epoch) -> dict:
-        X = batch_data[0].to(self.args.device)
-        X = self.moving_avg(X.transpose(-1, -2)).transpose(-1, -2)
-
-        B, L, C = X.shape
-
-        # AE1
-        z = self.model.encoder(X.reshape(B, L*C))
-        Wt1p = self.model.decoder1(z).reshape(B, L, C)
-        Wt2p = self.model.decoder2(z).reshape(B, L, C)
-        Wt2dp = self.model.decoder2(self.model.encoder(Wt1p.reshape(B, L*C))).reshape(B, L, C)
-
-        self.optimizer1.zero_grad()
-        loss_AE1 = (1 / epoch) * F.mse_loss(X, Wt1p) + (1 - (1 / epoch)) * F.mse_loss(X, Wt2dp)
-        loss_AE1.backward()
-        self.optimizer1.step()
-
-        # AE2
-        z = self.model.encoder(X.reshape(B, L*C))
-        Wt1p = self.model.decoder1(z).reshape(B, L, C)
-        Wt2p = self.model.decoder2(z).reshape(B, L, C)
-        Wt2dp = self.model.decoder2(self.model.encoder(Wt1p.reshape(B, L*C))).reshape(B, L, C)
-
-        self.optimizer2.zero_grad()
-        loss_AE2 = (1 / epoch) * F.mse_loss(X, Wt2p) - (1 - (1 / epoch)) * F.mse_loss(X, Wt2dp)
-        loss_AE2.backward()
-        self.optimizer2.step()
-
-        out = {
-            "loss_AE1": loss_AE1.item(),
-            "loss_AE2": loss_AE2.item(),
-            "summary": loss_AE1.item() + loss_AE2.item()
-        }
-        return out
-
-    def calculate_recon_errors(self):
-        '''
-        :return:  returns (B, L, C) recon loss tensor
-        '''
-        eval_iterator = tqdm(
-            self.test_loader,
-            total=len(self.test_loader),
-            desc="calculating reconstruction errors",
-            leave=True
-        )
-        recon_errors = []
-        for i, batch_data in enumerate(eval_iterator):
-            X = batch_data[0].to(self.args.device)
-            recon_error = self.recon_error_criterion(X, self.args.alpha, self.args.beta).to("cpu")
-            recon_errors.append(recon_error)
-        recon_errors = np.concatenate(recon_errors, axis=0)
-        return recon_errors
-
-    def recon_error_criterion(self, Wt, alpha=0.5, beta=0.5):
-        '''
-        :param Wt: model input
-        :param alpha: low detection sensitivity
-        :param beta: high detection sensitivity
-        :return: recon error (B, L, C)
-        '''
-        B, L, C = Wt.shape
-        z = self.model.encoder(Wt.reshape(B, L*C))
-        Wt1p = self.model.decoder1(z).reshape(B, L, C)
-        Wt2dp = self.model.decoder2(self.model.encoder(Wt1p.reshape(B, L*C))).reshape(B, L, C)
-        return alpha * F.mse_loss(Wt, Wt1p, reduction='none') + beta * F.mse_loss(Wt, Wt2dp, reduction='none')
+        attens_energy = np.concatenate(attens_energy, axis=0).reshape(-1)
+        test_energy = np.array(attens_energy)
+        combined_energy = np.concatenate([train_energy, test_energy], axis=0)
+        threshold = np.percentile(combined_energy, 100 - self.args.anomaly_ratio)
+        return threshold
