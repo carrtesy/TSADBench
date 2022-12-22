@@ -52,9 +52,17 @@ def prepare_arguments(parser):
     AE_parser = subparser.add_parser("AE")
     AE_parser.add_argument("--latent_dim", type=int, required=True, default=40, help=f"Encoder, decoder hidden dim")
 
+    ## AECov
+    AE_parser = subparser.add_parser("AECov")
+    AE_parser.add_argument("--latent_dim", type=int, required=True, default=40, help=f"Encoder, decoder hidden dim")
+    AE_parser.add_argument("--loss_fn", type=str, default="MSC-MCD", help=f"loss function")
+    AE_parser.add_argument("--LAMBDA", type=int, default=0, help=f"Encoder, decoder hidden dim")
+    AE_parser.add_argument("--OMEGA", type=int, default=0, help=f"Encoder, decoder hidden dim")
+
     ## VAE
     VAE_parser = subparser.add_parser("VAE")
     VAE_parser.add_argument("--latent_dim", type=int, required=True, default=40, help=f"Encoder, decoder hidden dim")
+    VAE_parser.add_argument("--beta", type=float, required=True, default=1e-05, help=f"Encoder, decoder hidden dim")
 
     ## LSTMEncDec
     LSTMEncDec_parser = subparser.add_parser("LSTMEncDec")

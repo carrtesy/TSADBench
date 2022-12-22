@@ -17,3 +17,14 @@ class AE(nn.Module):
         z = self.encoder(x)
         out = self.decoder(z)
         return out
+
+class AECov(nn.Module):
+    def __init__(self, input_size, latent_space_size):
+        super(AECov, self).__init__()
+        self.encoder = MLPEncoder(input_size=input_size, latent_space_size=latent_space_size)
+        self.decoder = MLPDecoder(input_size=input_size, latent_space_size=latent_space_size)
+
+    def forward(self, x):
+        z = self.encoder(x)
+        Xhat = self.decoder(z)
+        return Xhat

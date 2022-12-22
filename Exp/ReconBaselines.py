@@ -4,7 +4,7 @@ import wandb
 from Exp.ReconTrainer import ReconModelTrainer
 
 # models
-from models.AE import AE
+from models.AE import AE, AECov
 from models.VAE import VAE
 from models.LSTMEncDec import LSTMEncDec
 from models.USAD import USAD
@@ -72,6 +72,74 @@ class AE_Trainer(ReconModelTrainer):
         recon_errors = np.concatenate(recon_errors, axis=0)
         return recon_errors
 
+class AECov_Trainer(ReconModelTrainer):
+    def __init__(self, args, logger, train_loader, test_loader):
+        super(AECov_Trainer, self).__init__(args=args, logger=logger, train_loader=train_loader, test_loader=test_loader)
+
+        self.model = AECov(
+            input_size=self.args.window_size * self.args.num_channels,
+            latent_space_size=args.latent_dim,
+        ).to(self.args.device)
+
+        self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.args.lr)
+        self.iter = 0
+        self.OMEGA = 0
+
+    def _process_batch(self, batch_data) -> dict:
+        out = dict()
+        X = batch_data[0].to(self.args.device)
+        B, L, C = X.shape
+        Xhat = self.model(X.reshape(B, L*C)).reshape(B, L, C)
+        self.optimizer.zero_grad()
+
+        recon_loss = F.mse_loss(Xhat, X)
+
+
+
+        yhat, y = Xhat.transpose(-1, -2).unsqueeze(-1), X.transpose(-1, -2).unsqueeze(-1)  # (B, C, L, 1)
+        true_cov = y @ y.transpose(-1, -2)  # (B, C, L, L)
+        estimated_cov = yhat @ yhat.transpose(-1, -2)  # (B, C, L, L)
+        cov_loss = ((1 / (L ** 2)) * torch.sum((true_cov - estimated_cov) ** 2, dim=(-1, -2))).mean()
+
+
+
+        #det_loss = torch.det(estimated_cov).mean()
+        loss = recon_loss + self.args.LAMBDA * cov_loss #+ self.args.OMEGA * (self.iter > 10000) * det_loss
+        loss.backward()
+        self.optimizer.step()
+        self.iter += 1
+        out.update({
+            "recon_loss": recon_loss.item(),
+            "cov_loss": cov_loss.item(),
+            #"det_loss": det_loss.item(),
+            "summary": loss.item(),
+        })
+        return out
+
+    def calculate_recon_errors(self):
+        '''
+        :param dataloader: eval dataloader
+        :return:  returns (B, L, C) recon loss tensor
+        '''
+        eval_iterator = tqdm(
+            self.test_loader,
+            total=len(self.test_loader),
+            desc="calculating reconstruction errors",
+            leave=True
+        )
+        recon_errors = []
+        for i, batch_data in enumerate(eval_iterator):
+            X = batch_data[0].to(self.args.device)
+            B, L, C = X.shape
+            Xhat = self.model(X.reshape(B, L*C)).reshape(B, L, C) # (B, C, L, 1)
+            estimated_cov = Xhat @ Xhat.transpose(-1, -2) # (B, C, L, L)
+            res = (X-Xhat).transpose(-1, -2).unsqueeze(-1) # (B, C, L, 1)
+            recon_error = res.transpose(-1, -2) @ torch.linalg.pinv(estimated_cov) @ res # (B, C, 1)
+            recon_error = recon_error.repeat(1, 1, L).transpose(-1, -2).to("cpu")
+            recon_errors.append(recon_error)
+        recon_errors = np.concatenate(recon_errors, axis=0)
+        return recon_errors
+
 
 class VAE_Trainer(ReconModelTrainer):
     def __init__(self, args, logger, train_loader, test_loader):
@@ -83,6 +151,8 @@ class VAE_Trainer(ReconModelTrainer):
         ).to(self.args.device)
 
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.args.lr)
+        self.beta = 0
+        self.iter = 0
 
     @staticmethod
     def gaussian_prior_KLD(mu, logvar):
@@ -97,11 +167,15 @@ class VAE_Trainer(ReconModelTrainer):
         self.optimizer.zero_grad()
         recon_loss = F.mse_loss(Xhat, X)
         KLD_loss = self.gaussian_prior_KLD(mu, logvar)
-        loss = recon_loss + KLD_loss
+        self.beta = min(self.iter * self.args.beta, 1)
+        loss = recon_loss + self.beta * KLD_loss
         loss.backward()
         self.optimizer.step()
 
+        self.iter += 1
+
         out = {
+            "beta": self.beta,
             "recon_loss": recon_loss.item(),
             "KLD_loss": KLD_loss.item(),
             "total_loss": loss.item(),

@@ -71,6 +71,7 @@ Trainers = {
     "IsolationForest": IsolationForest_Trainer,
     "LOF": LOF_Trainer,
     "AE": AE_Trainer,
+    "AECov": AECov_Trainer,
     "VAE": VAE_Trainer,
     "LSTMEncDec": LSTMEncDec_Trainer,
     "USAD": USAD_Trainer,
