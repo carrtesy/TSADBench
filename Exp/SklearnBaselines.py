@@ -19,15 +19,15 @@ from tqdm import tqdm
 import pickle
 
 class LOF_Trainer(SklearnModelTrainer):
-    def __init__(self, args):
-        super(LOF_Trainer, self).__init__(args)
+    def __init__(self, args, logger, train_loader, test_loader):
+        super(LOF_Trainer, self).__init__(args, logger, train_loader, test_loader)
         self.model = LocalOutlierFactor(
             novelty=True,
         )
 
 class IsolationForest_Trainer(SklearnModelTrainer):
-    def __init__(self, args):
-        super(IsolationForest_Trainer, self).__init__(args)
+    def __init__(self, args, logger, train_loader, test_loader):
+        super(IsolationForest_Trainer, self).__init__(args, logger, train_loader, test_loader)
         self.model = IsolationForest(
             n_estimators=args.n_estimators,
             n_jobs=args.n_jobs,
@@ -36,6 +36,6 @@ class IsolationForest_Trainer(SklearnModelTrainer):
         )
 
 class OCSVM_Trainer(SklearnModelTrainer):
-    def __init__(self, args):
-        super(OCSVM_Trainer, self).__init__(args)
-        self.model = LocalOutlierFactor()
+    def __init__(self, args, logger, train_loader, test_loader):
+        super(OCSVM_Trainer, self).__init__(args, logger, train_loader, test_loader)
+        self.model = OneClassSVM()
