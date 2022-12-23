@@ -90,15 +90,16 @@ def prepare_arguments(parser):
     OmniAnomaly_parser.add_argument("--dense_dim", type=int, default=128, help=f"Encoder, decoder hidden dim")
     OmniAnomaly_parser.add_argument("--beta", type=int, default=1e-06, help=f"Initial Beta for KL Loss")
 
+    ## DeepSVDD
+    DeepSVDD_parser = subparser.add_parser("DeepSVDD")
+
     ## AnomalyTransformer
     AnomalyTransformer_parser = subparser.add_parser("AnomalyTransformer")
     AnomalyTransformer_parser.add_argument('--anomaly_ratio', type=float, default=4.00)
     AnomalyTransformer_parser.add_argument('--k', type=int, default=3)
     AnomalyTransformer_parser.add_argument('--temperature', type=int, default=50)
 
-    '''
-    parse the arguments.
-    '''
+    # Parse the arguments.
     args = parser.parse_args()
     args.checkpoint_path = os.path.join(args.checkpoints, f"{args.exp_id}")
     args.logging_path = os.path.join(args.logs, f"{args.exp_id}")

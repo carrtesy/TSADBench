@@ -28,7 +28,7 @@
 import wandb
 from utils.logger import make_logger
 import argparse
-from utils.parser import prepare_arguments
+from utils.argpass import prepare_arguments
 import torch
 import os
 import numpy as np
@@ -76,6 +76,7 @@ Trainers = {
     "LSTMEncDec": LSTMEncDec_Trainer,
     "USAD": USAD_Trainer,
     "OmniAnomaly": OmniAnomaly_Trainer,
+    "DeepSVDD": DeepSVDD_Trainer,
     "AnomalyTransformer": AnomalyTransformer_Trainer,
 }
 
