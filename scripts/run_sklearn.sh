@@ -1,5 +1,5 @@
 #!/bin/bash
-for data in toyUSW NeurIPS-TS-UNI NeurIPS-TS-MUL SWaT WADI SMD PSM SMAP MSL
+for data in toyUSW NeurIPS-TS-UNI NeurIPS-TS-MUL MSL PSM SMAP SWaT WADI SMD
 do
     for model in OCSVM IsolationForest LOF
     do

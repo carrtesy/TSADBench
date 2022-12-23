@@ -75,10 +75,8 @@ Trainers = {
     "VAE": VAE_Trainer,
     "LSTMEncDec": LSTMEncDec_Trainer,
     "USAD": USAD_Trainer,
+    "OmniAnomaly": OmniAnomaly_Trainer,
     "AnomalyTransformer": AnomalyTransformer_Trainer,
-    #"MAE": MAE_Trainer,
-    #"VQVAE": VQVAE_Trainer,
-    #"ANP": ANP_Trainer,
 }
 
 trainer = Trainers[args.model](

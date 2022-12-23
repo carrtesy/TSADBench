@@ -36,17 +36,20 @@ def prepare_arguments(parser):
 
     ## OCSVM
     OCSVM_parser = subparser.add_parser("OCSVM")
+    OCSVM_parser.add_argument("--max_iter", type=int, default=300)
+    OCSVM_parser.add_argument("--n_jobs", type=int, default=1)
 
     ## IsolationForest
     IsolationForest_parser = subparser.add_parser("IsolationForest")
     IsolationForest_parser.add_argument("--n_estimators", type=int, default=100,
                                         help=f"The number of base estimators in the ensemble.")
-    IsolationForest_parser.add_argument("--n_jobs", type=int, default=-1, help=f"The number of jobs to run")
+    IsolationForest_parser.add_argument("--n_jobs", type=int, default=1, help=f"The number of jobs to run")
     IsolationForest_parser.add_argument("--random_state", type=int, default=42, help=f"Random State")
     IsolationForest_parser.add_argument("--verbose", type=int, default=1, help=f"Verbose")
 
     ## LOF
     LOF_parser = subparser.add_parser("LOF")
+    LOF_parser.add_argument("--n_jobs", type=int, default=1, help=f"The number of jobs to run")
 
     ## AE
     AE_parser = subparser.add_parser("AE")
@@ -78,6 +81,13 @@ def prepare_arguments(parser):
     USAD_parser.add_argument("--alpha", type=float, required=False, default=0.1, help=f"alpha")
     USAD_parser.add_argument("--beta", type=float, required=False, default=0.9, help=f"beta")
     USAD_parser.add_argument("--dsr", type=int, default=5, help="down sampling rate")
+
+    ## OmniAnomaly
+    OmniAnomaly_parser = subparser.add_parser("OmniAnomaly")
+    OmniAnomaly_parser.add_argument("--hidden_dim", type=int, default=128, help=f"Encoder, decoder hidden dim")
+    OmniAnomaly_parser.add_argument("--z_dim", type=int, default=128, help=f"Encoder, decoder hidden dim")
+    OmniAnomaly_parser.add_argument("--dense_dim", type=int, default=128, help=f"Encoder, decoder hidden dim")
+    OmniAnomaly_parser.add_argument("--beta", type=int, default=1e-06, help=f"Initial Beta for KL Loss")
 
     ## AnomalyTransformer
     AnomalyTransformer_parser = subparser.add_parser("AnomalyTransformer")

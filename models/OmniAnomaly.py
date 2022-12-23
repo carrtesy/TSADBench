@@ -15,9 +15,9 @@ class PlanarNormalizingFlow(nn.Module):
 
 
 class Qnet(nn.Module):
-    def __init__(self, in_dim=4096, hidden_dim=1024, z_dim=100, dense_dim=100):
+    def __init__(self, in_dim, hidden_dim, z_dim, dense_dim):
         super(Qnet, self).__init__()
-        self.gru = nn.GRU(in_dim, hidden_dim, num_layers = 1, batch_first=True, bidirectional=False)
+        self.gru = nn.GRU(in_dim, hidden_dim, num_layers=1, batch_first=True, bidirectional=False)
         self.z_dim = z_dim
         self.e_dim = hidden_dim
         self.dense_dim = dense_dim
@@ -58,7 +58,7 @@ class Qnet(nn.Module):
 
 
 class Pnet(nn.Module):
-    def __init__(self, z_dim=4096, hidden_dim=1024, dense_dim = 100, out_dim = 100):
+    def __init__(self, z_dim, hidden_dim, dense_dim, out_dim):
         super(Pnet, self).__init__()
         self.z_dim = z_dim
         self.hidden_dim = hidden_dim
@@ -75,9 +75,7 @@ class Pnet(nn.Module):
 
     def forward(self, z):
         B, W, F = z.shape
-
         out = torch.zeros(B, W, self.out_dim).to(z.device)
-
         d_t = None
 
         for t in range(W):
@@ -95,7 +93,7 @@ class Pnet(nn.Module):
 
 
 class OmniAnomaly(nn.Module):
-    def __init__(self, in_dim=4096, hidden_dim=1024, z_dim=100, dense_dim=100, out_dim=100):
+    def __init__(self, in_dim, hidden_dim, z_dim, dense_dim, out_dim):
         super(OmniAnomaly, self).__init__()
         self.qnet = Qnet(in_dim=in_dim, hidden_dim=hidden_dim, z_dim=z_dim, dense_dim=dense_dim)
         self.pnet = Pnet(z_dim=z_dim, hidden_dim=hidden_dim, dense_dim=dense_dim, out_dim=out_dim)
