@@ -41,4 +41,5 @@ class OCSVM_Trainer(SklearnModelTrainer):
         super(OCSVM_Trainer, self).__init__(args, logger, train_loader, test_loader)
         self.model = OneClassSVM(
             max_iter=self.args.max_iter,
+            verbose=True,
         )
