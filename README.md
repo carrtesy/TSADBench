@@ -59,10 +59,16 @@ LOF: Identifying Density-Based Local Outliers. SIGMOD Conference 2000: 93-104](h
 7. OmniAnomaly [Su, Ya, et al. "Robust anomaly detection for multivariate time series through stochastic recurrent neural network." Proceedings of the 25th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining. 2019.](https://dl.acm.org/doi/pdf/10.1145/3292500.3330672?casa_token=k52TYpPsw2QAAAAA:5PQRaCv7bH507y-pnpvFqLM_TDUmMMTlZU24P8coKzZmT6LVtFC-8dh8AmhTJ_kYZFl11NyxBSGi)
 8. USAD
 [Audibert, Julien, et al. "Usad: Unsupervised anomaly detection on multivariate time series." Proceedings of the 26th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining. 2020.](https://dl.acm.org/doi/pdf/10.1145/3394486.3403392)
+9. DeepSVDD [Lukas Ruff, Nico Görnitz, Lucas Deecke, Shoaib Ahmed Siddiqui, Robert A. Vandermeulen, Alexander Binder, Emmanuel Müller, Marius Kloft:
+Deep One-Class Classification. ICML 2018: 4390-4399](https://proceedings.mlr.press/v80/ruff18a.html)
+10. Anomaly Transformer [Jiehui Xu, Haixu Wu, Jianmin Wang, Mingsheng Long:
+Anomaly Transformer: Time Series Anomaly Detection with Association Discrepancy. ICLR 2022
+](https://openreview.net/forum?id=LzQQ89U1qm_)
 
 ## References
 - OCSVM (Sklearn): https://scikit-learn.org/stable/modules/generated/sklearn.svm.OneClassSVM.html
 - IsolationForest (Sklearn): https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html
 - LOF (Sklearn): https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.LocalOutlierFactor.html
 - LSTMEncDec Implementation: https://joungheekim.github.io/2020/11/14/code-review/ (Explanations in Korean)
+- DeepSVDD (PyOD): https://pyod.readthedocs.io/en/latest/pyod.models.html#pyod.models.deep_svdd.DeepSVDD
 - Anomaly Transformer Github: https://github.com/thuml/Anomaly-Transformer
