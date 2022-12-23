@@ -38,6 +38,7 @@ def prepare_arguments(parser):
     OCSVM_parser = subparser.add_parser("OCSVM")
     OCSVM_parser.add_argument("--max_iter", type=int, default=300)
     OCSVM_parser.add_argument("--n_jobs", type=int, default=1)
+    OCSVM_parser.add_argument("--verbose", type=bool, default=True)
 
     ## IsolationForest
     IsolationForest_parser = subparser.add_parser("IsolationForest")
