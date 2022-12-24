@@ -77,9 +77,11 @@ class Trainer:
         return self.threshold_function_map[self.args.thresholding](gt, anomaly_scores)
 
     def checkpoint(self, filepath):
+        self.logger.info(f"checkpointing: {filepath} @Trainer - torch.save")
         torch.save(self.model.state_dict(), filepath)
 
     def load(self, filepath):
+        self.logger.info(f"loading: {filepath} @Trainer - torch.load_state_dict")
         self.model.load_state_dict(torch.load(filepath))
         self.model.to(self.args.device)
 

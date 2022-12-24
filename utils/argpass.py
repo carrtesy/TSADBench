@@ -98,6 +98,7 @@ def prepare_arguments(parser):
     AnomalyTransformer_parser.add_argument('--anomaly_ratio', type=float, default=4.00)
     AnomalyTransformer_parser.add_argument('--k', type=int, default=3)
     AnomalyTransformer_parser.add_argument('--temperature', type=int, default=50)
+    AnomalyTransformer_parser.add_argument('--e_layers', type=int, default=3)
 
     # Parse the arguments.
     args = parser.parse_args()

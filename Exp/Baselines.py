@@ -29,13 +29,13 @@ from tqdm import tqdm
 import pickle
 
 class AnomalyTransformer_Trainer(Trainer):
-    def __init__(self, args, train_loader, test_loader):
-        super(AnomalyTransformer_Trainer, self).__init__(args=args, train_loader=train_loader, test_loader=test_loader)
+    def __init__(self, args, logger, train_loader, test_loader):
+        super(AnomalyTransformer_Trainer, self).__init__(args=args, logger=logger, train_loader=train_loader, test_loader=test_loader)
         self.model = AnomalyTransformer(
             win_size=self.args.window_size,
-            enc_in=args.num_channels,
-            c_out=args.num_channels,
-            e_layers=3,
+            enc_in=self.args.num_channels,
+            c_out=self.args.num_channels,
+            e_layers=self.args.e_layers,
         ).to(self.args.device)
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=args.lr)
         self.threshold_function_map = {
@@ -47,6 +47,7 @@ class AnomalyTransformer_Trainer(Trainer):
     # code referrence:
     # https://github.com/thuml/Anomaly-Transformer/blob/72a71e5f0847bd14ba0253de899f7b0d5ba6ee97/solver.py#L130
     def train(self):
+        wandb.watch(self.model, log="all", log_freq=100)
         self.model.train()
         time_now = time.time()
         train_steps = len(self.train_loader)
@@ -83,7 +84,7 @@ class AnomalyTransformer_Trainer(Trainer):
                 if (i + 1) % 100 == 0:
                     speed = (time.time() - time_now) / iter_count
                     left_time = speed * ((self.args.epochs - epoch) * train_steps - i)
-                    print('\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))
+                    self.logger.info(f"\tspeed: {speed:.4f}s/iter; left time: {left_time:.4f}s")
                     iter_count = 0
                     time_now = time.time()
 
@@ -92,12 +93,13 @@ class AnomalyTransformer_Trainer(Trainer):
                 loss2.backward()
                 self.optimizer.step()
 
-            print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
+            self.logger.info(f"Epoch: {epoch + 1} cost time: {time.time() - epoch_time}")
             train_loss = np.average(loss1_list)
-
-            print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} ".format(epoch + 1, train_steps, train_loss))
-
+            self.logger.info(f"Epoch: {epoch + 1}, Steps: {train_steps} | Train Loss: {train_loss:.7f} ")
             adjust_learning_rate(self.optimizer, epoch + 1, self.args.lr)
+            self.logger.info(f'Updating learning rate to {self.optimizer.param_groups[0]["lr"]}')
+
+            self.checkpoint(os.path.join(self.args.checkpoint_path, f"best.pth"))
 
 
     def calculate_anomaly_scores(self):
@@ -130,13 +132,8 @@ class AnomalyTransformer_Trainer(Trainer):
         test_energy = np.array(attens_energy)
         return test_energy
 
-
-    def get_threshold(self, gt, anomaly_scores, point_adjust=False):
-        print(f"thresholding with algorithm: {self.args.thresholding}")
-        return self.threshold_function_map[self.args.thresholding](gt, anomaly_scores, point_adjust=point_adjust)
-
     @torch.no_grad()
-    def anomaly_transformer_thresholding(self, gt, anomaly_scores, point_adjust):
+    def anomaly_transformer_thresholding(self, gt, anomaly_scores):
         temperature = self.args.temperature
         criterion = nn.MSELoss(reduce=False)
 
