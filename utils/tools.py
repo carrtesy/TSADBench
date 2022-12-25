@@ -1,8 +1,8 @@
 import torch
 import numpy as np
 import random
-import argparse
 import pandas as pd
+from torch.autograd import Variable
 
 def SEED_everything(SEED):
     torch.manual_seed(SEED)
@@ -21,6 +21,10 @@ def read_xlsx_and_convert_to_csv(path):
     excelFile.to_csv(f"{filename}.csv", index=None, header=True)
 
 
+def to_var(x, volatile=False):
+    if torch.cuda.is_available():
+        x = x.cuda()
+    return Variable(x, volatile=volatile)
 
 
 if __name__ == "__main__":

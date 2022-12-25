@@ -6,6 +6,7 @@ from Exp.Trainer import Trainer
 # models
 from models.AnomalyTransformer import AnomalyTransformer
 from pyod.models.deep_svdd import DeepSVDD
+from models.DAGMM import DAGMM
 
 # utils
 from utils.metrics import get_statistics
@@ -16,6 +17,7 @@ from utils.metrics import get_statistics
 from utils.metrics import PA
 from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score
 from sklearn.metrics import roc_curve, roc_auc_score
+from utils.tools import to_var # for DAGMM.
 
 # others
 import torch
@@ -24,6 +26,7 @@ import torch.nn.functional as F
 import numpy as np
 import time
 import os
+import datetime
 
 from tqdm import tqdm
 import pickle
@@ -191,6 +194,83 @@ class AnomalyTransformer_Trainer(Trainer):
         combined_energy = np.concatenate([train_energy, test_energy], axis=0)
         threshold = np.percentile(combined_energy, 100 - self.args.anomaly_ratio)
         return threshold
+
+
+# code reference:
+# https://github.com/danieltan07/dagmm/blob/master/solver.py
+class DAGMM_Trainer(Trainer):
+    def __init__(self, args, logger, train_loader, test_loader):
+        super(DAGMM_Trainer, self).__init__(args=args, logger=logger, train_loader=train_loader, test_loader=test_loader)
+        self.model = DAGMM(
+            self.args.gmm_k
+        ).to(self.args.device)
+        self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.args.lr)
+        self.threshold_function_map = {
+            "oracle": self.oracle_thresholding,
+            "DAGMM": self.DAGMM_thresholding,
+        }
+        self.criterion = nn.MSELoss()
+
+    def train(self):
+        wandb.watch(self.model, log="all", log_freq=100)
+        self.model.train()
+
+        # Start training
+        self.ap_global_train = np.array([0, 0, 0])
+        best_train_stats = None
+        for epoch in range(1, self.args.epochs+1):
+            train_stats = self.train_epoch()
+            self.logger.info(f"epoch {epoch} | train_stats: {train_stats}")
+            # Save model checkpoints
+            if best_train_stats is None or train_stats < best_train_stats:
+                self.logger.info(f"Saving best results @epoch{epoch}")
+                self.checkpoint(os.path.join(self.args.checkpoint_path, f"best.pth"))
+                best_train_stats = train_stats
+        return
+
+    def train_epoch(self):
+        log_freq = len(self.train_loader) // self.args.log_freq
+        train_summary = 0.0
+        for i, (input_data, labels) in enumerate(self.train_loader):
+            input_data = self.to_var(input_data)
+            total_loss, sample_energy, recon_error, cov_diag = self._process_batch(input_data)
+            # Logging
+            loss = {
+                'recon_error': recon_error.item(),
+                'cov_diag': cov_diag.item(),
+                'sample_energy': sample_energy.item(),
+                'summary': total_loss.data.item(),
+            }
+
+            if (i+1) % log_freq == 0:
+                self.logger.info(f"{loss}")
+                self.logger.info(f"phi: {self.model.phi}, "
+                                 f"mu: {self.model.mu}, "
+                                 f"cov: {self.model.cov})")
+                wandb.log(loss)
+            train_summary += loss["summary"]
+        train_summary /= len(self.train_loader)
+        return train_summary
+
+    def _process_batch(self, batch_data):
+        enc, dec, z, gamma = self.model(batch_data)
+        total_loss, sample_energy, recon_error, cov_diag = self.dagmm.loss_function(
+            batch_data, dec, z, gamma, self.args.lambda_energy, self.args.lambda_cov_diag
+        )
+        self.model.zero_grad()
+        total_loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.args.grad_clip)
+        self.optimizer.step()
+        return total_loss, sample_energy, recon_error,
+
+    @torch.no_grad()
+    def calculate_anomaly_scores(self):
+        pass
+
+    @torch.no_grad()
+    def DAGMM_thresholding(self, gt, anomaly_scores):
+        pass
+
 
 class DeepSVDD_Trainer(Trainer):
     def __init__(self, args, logger, train_loader, test_loader):

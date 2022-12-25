@@ -93,6 +93,18 @@ def prepare_arguments(parser):
     ## DeepSVDD
     DeepSVDD_parser = subparser.add_parser("DeepSVDD")
 
+    ## DAGMM
+    DAGMM_parser = subparser.add_parser("DAGMM")
+    DAGMM_parser.add_argument('--num_epochs', type=int, default=200)
+    DAGMM_parser.add_argument('--batch_size', type=int, default=1024)
+    DAGMM_parser.add_argument('--gmm_k', type=int, default=4)
+    DAGMM_parser.add_argument('--lambda_energy', type=float, default=0.1)
+    DAGMM_parser.add_argument('--lambda_cov_diag', type=float, default=0.005)
+    DAGMM_parser.add_argument('--grad_clip', type=float, default=5)
+
+    # Step size
+    DAGMM_parser.add_argument('--sample_step', type=int, default=194)
+
     ## AnomalyTransformer
     AnomalyTransformer_parser = subparser.add_parser("AnomalyTransformer")
     AnomalyTransformer_parser.add_argument('--anomaly_ratio', type=float, default=4.00)

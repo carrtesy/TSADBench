@@ -2,7 +2,7 @@
 Jiehui Xu, Haixu Wu, Jianmin Wang, Mingsheng Long:
 Anomaly Transformer: Time Series Anomaly Detection with Association Discrepancy. ICLR 2022
 
-Code From: https://github.com/thuml/Anomaly-Transformer
+Code modified from: https://github.com/thuml/Anomaly-Transformer
 '''
 
 

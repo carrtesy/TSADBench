@@ -1,3 +1,10 @@
+'''
+Re-implementation of OmniAnomaly:
+Ya Su, Youjian Zhao, Chenhao Niu, Rong Liu, Wei Sun, Dan Pei:
+Robust Anomaly Detection for Multivariate Time Series through Stochastic Recurrent Neural Network. KDD 2019: 2828-2837
+Official code can be found at: (Tensorflow) https://github.com/NetManAIOps/OmniAnomaly
+'''
+
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
