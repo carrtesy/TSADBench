@@ -52,22 +52,6 @@ def prepare_arguments(parser):
     LOF_parser = subparser.add_parser("LOF")
     LOF_parser.add_argument("--n_jobs", type=int, default=1, help=f"The number of jobs to run")
 
-    ## AE
-    AE_parser = subparser.add_parser("AE")
-    AE_parser.add_argument("--latent_dim", type=int, required=True, default=40, help=f"Encoder, decoder hidden dim")
-
-    ## AECov
-    AE_parser = subparser.add_parser("AECov")
-    AE_parser.add_argument("--latent_dim", type=int, required=True, default=40, help=f"Encoder, decoder hidden dim")
-    AE_parser.add_argument("--loss_fn", type=str, default="MSC-MCD", help=f"loss function")
-    AE_parser.add_argument("--LAMBDA", type=int, default=0, help=f"Encoder, decoder hidden dim")
-    AE_parser.add_argument("--OMEGA", type=int, default=0, help=f"Encoder, decoder hidden dim")
-
-    ## VAE
-    VAE_parser = subparser.add_parser("VAE")
-    VAE_parser.add_argument("--latent_dim", type=int, required=True, default=40, help=f"Encoder, decoder hidden dim")
-    VAE_parser.add_argument("--beta", type=float, required=True, default=1e-05, help=f"Encoder, decoder hidden dim")
-
     ## LSTMEncDec
     LSTMEncDec_parser = subparser.add_parser("LSTMEncDec")
     LSTMEncDec_parser.add_argument("--latent_dim", type=int, default=128, help=f"Encoder, decoder hidden dim")
@@ -75,6 +59,13 @@ def prepare_arguments(parser):
                                    help=f"The number of hidden layers.")
     LSTMEncDec_parser.add_argument("--dropout", type=float, default=0.1, help=f"dropout")
     LSTMEncDec_parser.add_argument("--subseq_length", type=float, default=100, help=f"subseq length when calculating mahalanobis distance (for cov matrix computation)")
+
+    ## LSTMVAE
+    LSTMVAE_parser = subparser.add_parser("LSTMVAE")
+    LSTMVAE_parser.add_argument("--hidden_dim", type=int, default=32)
+    LSTMVAE_parser.add_argument("--z_dim", type=int, default=3)
+    LSTMVAE_parser.add_argument("--n_layers", type=int, default=2)
+    LSTMVAE_parser.add_argument("--beta", type=float, default=0.0001)
 
     ## USAD
     USAD_parser = subparser.add_parser("USAD")
