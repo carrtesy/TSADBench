@@ -71,6 +71,7 @@ Anomaly Transformer: Time Series Anomaly Detection with Association Discrepancy.
 - IsolationForest (Sklearn): https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html
 - LOF (Sklearn): https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.LocalOutlierFactor.html
 - LSTMEncDec Implementation: https://joungheekim.github.io/2020/11/14/code-review/ (Explanations in Korean)
+- LSTMVAE: https://github.com/carrtesy/LSTMVAE-Pytorch
 - DeepSVDD (PyOD): https://pyod.readthedocs.io/en/latest/pyod.models.html#pyod.models.deep_svdd.DeepSVDD
-- DAGMM : https://github.com/tnakae/DAGMM (Unoffical Pytorch), 
+- DAGMM : https://github.com/tnakae/DAGMM (Unoffical Pytorch)
 - Anomaly Transformer Github: https://github.com/thuml/Anomaly-Transformer
