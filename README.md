@@ -62,9 +62,8 @@ LOF: Identifying Density-Based Local Outliers. SIGMOD Conference 2000: 93-104](h
 9. DeepSVDD [Lukas Ruff, Nico Görnitz, Lucas Deecke, Shoaib Ahmed Siddiqui, Robert A. Vandermeulen, Alexander Binder, Emmanuel Müller, Marius Kloft:
 Deep One-Class Classification. ICML 2018: 4390-4399](https://proceedings.mlr.press/v80/ruff18a.html)
 10. DAGMM [Bo Zong, Qi Song, Martin Renqiang Min, Wei Cheng, Cristian Lumezanu, Dae-ki Cho, Haifeng Chen: Deep Autoencoding Gaussian Mixture Model for Unsupervised Anomaly Detection. ICLR (Poster) 2018](https://openreview.net/forum?id=BJJLHbb0-)
-11. InterFusion [Zhihan Li, Youjian Zhao, Jiaqi Han, Ya Su, Rui Jiao, Xidao Wen, Dan Pei: Multivariate Time Series Anomaly Detection and Interpretation using Hierarchical Inter-Metric and Temporal Embedding. KDD 2021: 3220-3230](https://dl.acm.org/doi/10.1145/3447548.3467075)
-12. THOC [Lifeng Shen, Zhuocong Li, James T. Kwok: Timeseries Anomaly Detection using Temporal Hierarchical One-Class Network. NeurIPS 2020](https://proceedings.neurips.cc/paper/2020/file/97e401a02082021fd24957f852e0e475-Paper.pdf)
-13. Anomaly Transformer [Jiehui Xu, Haixu Wu, Jianmin Wang, Mingsheng Long:
+11. THOC [Lifeng Shen, Zhuocong Li, James T. Kwok: Timeseries Anomaly Detection using Temporal Hierarchical One-Class Network. NeurIPS 2020](https://proceedings.neurips.cc/paper/2020/file/97e401a02082021fd24957f852e0e475-Paper.pdf)
+12. Anomaly Transformer [Jiehui Xu, Haixu Wu, Jianmin Wang, Mingsheng Long:
 Anomaly Transformer: Time Series Anomaly Detection with Association Discrepancy. ICLR 2022
 ](https://openreview.net/forum?id=LzQQ89U1qm_)
 
@@ -75,5 +74,4 @@ Anomaly Transformer: Time Series Anomaly Detection with Association Discrepancy.
 - LSTMEncDec Implementation: https://joungheekim.github.io/2020/11/14/code-review/ (Explanations in Korean)
 - DeepSVDD (PyOD): https://pyod.readthedocs.io/en/latest/pyod.models.html#pyod.models.deep_svdd.DeepSVDD
 - DAGMM : https://github.com/tnakae/DAGMM (Unoffical Pytorch), 
-- InterFusion: https://github.com/zhhlee/InterFusion (Official, TF)
 - Anomaly Transformer Github: https://github.com/thuml/Anomaly-Transformer

@@ -98,12 +98,17 @@ def prepare_arguments(parser):
     DAGMM_parser.add_argument('--num_epochs', type=int, default=200)
     DAGMM_parser.add_argument('--batch_size', type=int, default=1024)
     DAGMM_parser.add_argument('--gmm_k', type=int, default=4)
+    DAGMM_parser.add_argument('--latent_dim', type=int, default=3)
     DAGMM_parser.add_argument('--lambda_energy', type=float, default=0.1)
     DAGMM_parser.add_argument('--lambda_cov_diag', type=float, default=0.005)
     DAGMM_parser.add_argument('--grad_clip', type=float, default=5)
 
-    # Step size
-    DAGMM_parser.add_argument('--sample_step', type=int, default=194)
+    ## THOC
+    THOC_parser = subparser.add_parser("THOC")
+    THOC_parser.add_argument("--hidden_dim", type=int, default=128)
+    THOC_parser.add_argument("--L2_reg", type=float, default=1.0)
+    THOC_parser.add_argument("--LAMBDA_orth", type=float, default=1.0)
+    THOC_parser.add_argument("--LAMBDA_TSS", type=float, default=1.0)
 
     ## AnomalyTransformer
     AnomalyTransformer_parser = subparser.add_parser("AnomalyTransformer")

@@ -77,6 +77,8 @@ Trainers = {
     "USAD": USAD_Trainer,
     "OmniAnomaly": OmniAnomaly_Trainer,
     "DeepSVDD": DeepSVDD_Trainer,
+    "DAGMM": DAGMM_Trainer,
+    "THOC": THOC_Trainer,
     "AnomalyTransformer": AnomalyTransformer_Trainer,
 }
 

@@ -21,6 +21,7 @@ class Trainer:
         self.threshold_function_map = {
             "oracle": self.oracle_thresholding,
         }
+        self.logger.info(f"{self.model}")
 
     @torch.no_grad()
     def infer(self):

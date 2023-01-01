@@ -15,36 +15,41 @@ import math
 class DAGMM(nn.Module):
     """Residual Block."""
 
-    def __init__(self, n_gmm=2, latent_dim=3):
+    def __init__(self, n_gmm, input_dim, latent_dim):
         super(DAGMM, self).__init__()
 
+        # to assert at least 1 dim input
+        d1 = max(1, input_dim//2)
+        d2 = max(d1, input_dim//4)
+        d3 = max(d2, input_dim//8)
+
         layers = []
-        layers += [nn.Linear(118, 60)]
+        layers += [nn.Linear(input_dim, d1)]
         layers += [nn.Tanh()]
-        layers += [nn.Linear(60, 30)]
+        layers += [nn.Linear(d1, d2)]
         layers += [nn.Tanh()]
-        layers += [nn.Linear(30, 10)]
+        layers += [nn.Linear(d2, d3)]
         layers += [nn.Tanh()]
-        layers += [nn.Linear(10, 1)]
+        layers += [nn.Linear(d3, 1)]
 
         self.encoder = nn.Sequential(*layers)
 
         layers = []
-        layers += [nn.Linear(1, 10)]
+        layers += [nn.Linear(1, d3)]
         layers += [nn.Tanh()]
-        layers += [nn.Linear(10, 30)]
+        layers += [nn.Linear(d3, d2)]
         layers += [nn.Tanh()]
-        layers += [nn.Linear(30, 60)]
+        layers += [nn.Linear(d2, d1)]
         layers += [nn.Tanh()]
-        layers += [nn.Linear(60, 118)]
+        layers += [nn.Linear(d1, input_dim)]
 
         self.decoder = nn.Sequential(*layers)
 
         layers = []
-        layers += [nn.Linear(latent_dim, 10)]
+        layers += [nn.Linear(latent_dim, latent_dim*3)]
         layers += [nn.Tanh()]
         layers += [nn.Dropout(p=0.5)]
-        layers += [nn.Linear(10, n_gmm)]
+        layers += [nn.Linear(latent_dim*3, n_gmm)]
         layers += [nn.Softmax(dim=1)]
 
         self.estimation = nn.Sequential(*layers)
@@ -117,7 +122,6 @@ class DAGMM(nn.Module):
             # K x D x D
             cov_k = cov[i] + to_var(torch.eye(D) * eps)
             cov_inverse.append(torch.inverse(cov_k).unsqueeze(0))
-
             det_cov.append(torch.linalg.cholesky(cov_k * 2 * math.pi).diag().prod().unsqueeze(0))
             cov_diag = cov_diag + torch.sum(1 / cov_k.diag())
 

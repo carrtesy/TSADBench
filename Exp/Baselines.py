@@ -7,6 +7,7 @@ from Exp.Trainer import Trainer
 from models.AnomalyTransformer import AnomalyTransformer
 from pyod.models.deep_svdd import DeepSVDD
 from models.DAGMM import DAGMM
+from models.THOC import THOC
 
 # utils
 from utils.metrics import get_statistics
@@ -202,7 +203,10 @@ class DAGMM_Trainer(Trainer):
     def __init__(self, args, logger, train_loader, test_loader):
         super(DAGMM_Trainer, self).__init__(args=args, logger=logger, train_loader=train_loader, test_loader=test_loader)
         self.model = DAGMM(
-            self.args.gmm_k
+            n_gmm=self.args.gmm_k,
+            input_dim=self.args.window_size*self.args.num_channels,
+            latent_dim=self.args.latent_dim,
+
         ).to(self.args.device)
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.args.lr)
         self.threshold_function_map = {
@@ -229,10 +233,11 @@ class DAGMM_Trainer(Trainer):
         return
 
     def train_epoch(self):
-        log_freq = len(self.train_loader) // self.args.log_freq
+        log_freq = max(len(self.train_loader) // self.args.log_freq, 1)
         train_summary = 0.0
         for i, (input_data, labels) in enumerate(self.train_loader):
-            input_data = self.to_var(input_data)
+            B, L, C = input_data.shape
+            input_data = to_var(input_data.reshape(B, L*C))
             total_loss, sample_energy, recon_error, cov_diag = self._process_batch(input_data)
             # Logging
             loss = {
@@ -244,9 +249,6 @@ class DAGMM_Trainer(Trainer):
 
             if (i+1) % log_freq == 0:
                 self.logger.info(f"{loss}")
-                self.logger.info(f"phi: {self.model.phi}, "
-                                 f"mu: {self.model.mu}, "
-                                 f"cov: {self.model.cov})")
                 wandb.log(loss)
             train_summary += loss["summary"]
         train_summary /= len(self.train_loader)
@@ -254,22 +256,110 @@ class DAGMM_Trainer(Trainer):
 
     def _process_batch(self, batch_data):
         enc, dec, z, gamma = self.model(batch_data)
-        total_loss, sample_energy, recon_error, cov_diag = self.dagmm.loss_function(
+        total_loss, sample_energy, recon_error, cov_diag = self.model.loss_function(
             batch_data, dec, z, gamma, self.args.lambda_energy, self.args.lambda_cov_diag
         )
         self.model.zero_grad()
         total_loss.backward()
         torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.args.grad_clip)
         self.optimizer.step()
-        return total_loss, sample_energy, recon_error,
+        return total_loss, sample_energy, recon_error, cov_diag
 
     @torch.no_grad()
     def calculate_anomaly_scores(self):
-        pass
+        # get test energy
+        test_energy = []
+        test_labels = []
+        test_z = []
+        for it, (input_data, labels) in enumerate(self.test_loader):
+            B, L, C = input_data.shape
+            input_data = to_var(input_data.reshape(B, L * C))
+            enc, dec, z, gamma = self.model(input_data)
+            sample_energy, cov_diag = self.model.compute_energy(z, size_average=False)
+            test_energy.append(sample_energy.data.cpu().numpy())
+            test_z.append(z.data.cpu().numpy())
+            test_labels.append(labels.numpy())
+
+        test_energy = np.concatenate(test_energy, axis=0)
+        return test_energy
 
     @torch.no_grad()
     def DAGMM_thresholding(self, gt, anomaly_scores):
-        pass
+        self.model.eval()
+
+        # train energy
+        N = 0
+        mu_sum = 0
+        cov_sum = 0
+        gamma_sum = 0
+
+        for it, (input_data, labels) in enumerate(self.train_loader):
+            B, L, C = input_data.shape
+            input_data = to_var(input_data.reshape(B, L * C))
+            enc, dec, z, gamma = self.model(input_data)
+            phi, mu, cov = self.model.compute_gmm_params(z, gamma)
+
+            batch_gamma_sum = torch.sum(gamma, dim=0)
+
+            gamma_sum += batch_gamma_sum
+            mu_sum += mu * batch_gamma_sum.unsqueeze(-1)  # keep sums of the numerator only
+            cov_sum += cov * batch_gamma_sum.unsqueeze(-1).unsqueeze(-1)  # keep sums of the numerator only
+
+            N += input_data.size(0)
+
+        train_phi = gamma_sum / N
+        train_mu = mu_sum / gamma_sum.unsqueeze(-1)
+        train_cov = cov_sum / gamma_sum.unsqueeze(-1).unsqueeze(-1)
+
+        self.logger.info("N:", N)
+        self.logger.info("phi :\n", train_phi)
+        self.logger.info("mu :\n", train_mu)
+        self.logger.info("cov :\n", train_cov)
+
+        train_energy = []
+        train_labels = []
+        train_z = []
+        for it, (input_data, labels) in enumerate(self.train_loader):
+            B, L, C = input_data.shape
+            input_data = to_var(input_data.reshape(B, L * C))
+
+            enc, dec, z, gamma = self.model(input_data)
+            sample_energy, cov_diag = self.model.compute_energy(z, phi=train_phi, mu=train_mu, cov=train_cov,
+                                                                size_average=False)
+
+            train_energy.append(sample_energy.data.cpu().numpy())
+            train_z.append(z.data.cpu().numpy())
+            train_labels.append(labels.numpy())
+
+        train_energy = np.concatenate(train_energy, axis=0)
+        train_z = np.concatenate(train_z, axis=0)
+        train_labels = np.concatenate(train_labels, axis=0)
+
+        # test energy
+        test_energy = []
+        test_labels = []
+        test_z = []
+        for it, (input_data, labels) in enumerate(self.test_loader):
+            B, L, C = input_data.shape
+            input_data = to_var(input_data.reshape(B, L * C))
+
+            enc, dec, z, gamma = self.model(input_data)
+            sample_energy, cov_diag = self.model.compute_energy(z, size_average=False)
+            test_energy.append(sample_energy.data.cpu().numpy())
+            test_z.append(z.data.cpu().numpy())
+            test_labels.append(labels.numpy())
+
+        test_energy = np.concatenate(test_energy, axis=0)
+        test_z = np.concatenate(test_z, axis=0)
+        test_labels = np.concatenate(test_labels, axis=0)
+
+        combined_energy = np.concatenate([train_energy, test_energy], axis=0)
+        combined_labels = np.concatenate([train_labels, test_labels], axis=0)
+
+        # thresholding
+        thresh = np.percentile(combined_energy, 100 - 20)
+        self.logger.info("Threshold :", thresh)
+        return thresh
 
 
 class DeepSVDD_Trainer(Trainer):
@@ -329,3 +419,88 @@ class DeepSVDD_Trainer(Trainer):
         self.logger.info(f"loading from {filepath}")
         with open(filepath, "rb") as f:
             self.model = pickle.load(f)
+
+class THOC_Trainer(Trainer):
+    def __init__(self, args, logger, train_loader, test_loader):
+        super(THOC_Trainer, self).__init__(args=args, logger=logger, train_loader=train_loader, test_loader=test_loader)
+        self.model = THOC(
+            C=self.args.num_channels,
+            W=self.args.window_size,
+            n_hidden=self.args.hidden_dim,
+            device=self.args.device
+        ).to(self.args.device)
+        self.optimizer = torch.optim.AdamW(params=self.model.parameters(), lr=self.args.lr, weight_decay=self.args.L2_reg)
+
+    def train(self):
+        wandb.watch(self.model, log="all", log_freq=100)
+
+        train_iterator = tqdm(
+            range(1, self.args.epochs + 1),
+            total=self.args.epochs,
+            desc="training epochs",
+            leave=True
+        )
+
+        best_train_stats = None
+        for epoch in train_iterator:
+            train_stats = self.train_epoch()
+            self.logger.info(f"epoch {epoch} | train_stats: {train_stats}")
+            self.checkpoint(os.path.join(self.args.checkpoint_path, f"epoch{epoch}.pth"))
+
+            if best_train_stats is None or train_stats < best_train_stats:
+                self.logger.info(f"Saving best results @epoch{epoch}")
+                self.checkpoint(os.path.join(self.args.checkpoint_path, f"best.pth"))
+                best_train_stats = train_stats
+        return
+
+    def train_epoch(self):
+        self.model.train()
+        log_freq = len(self.train_loader) // self.args.log_freq
+        train_summary = 0.0
+        for i, batch_data in enumerate(self.train_loader):
+            train_log = self._process_batch(batch_data)
+            if (i + 1) % log_freq == 0:
+                self.logger.info(f"{train_log}")
+                wandb.log(train_log)
+            train_summary += train_log["summary"]
+        train_summary /= len(self.train_loader)
+        return train_summary
+
+    def _process_batch(self, batch_data) -> dict:
+        out = dict()
+        X = batch_data[0].to(self.args.device)
+        B, L, C = X.shape
+
+        anomaly_score, loss_dict = self.model(X)
+        for k in loss_dict:
+            out.update({k: loss_dict[k].item()})
+
+        self.optimizer.zero_grad()
+        loss = loss_dict["L_THOC"] + self.args.LAMBDA_orth * loss_dict["L_orth"] + self.args.LAMBDA_TSS * loss_dict["L_TSS"]
+        loss.backward()
+        self.optimizer.step()
+
+        out.update({
+            "summary": loss.item(),
+        })
+        return out
+
+    def calculate_anomaly_scores(self):
+        eval_iterator = tqdm(
+            self.test_loader,
+            total=len(self.test_loader),
+            desc="calculating reconstruction errors",
+            leave=True
+        )
+
+        anomaly_scores = []
+        for i, batch_data in enumerate(eval_iterator):
+            X = batch_data[0].to(self.args.device)
+            B, L, C = X.shape
+            anomaly_score, loss_dict = self.model(X)
+            anomaly_scores.append(anomaly_score)
+
+        anomaly_scores = torch.cat(anomaly_scores, dim=0)
+        init_pred = anomaly_scores[0].repeat(self.args.window_size-1)
+        anomaly_scores = torch.cat((init_pred, anomaly_scores)).cpu().numpy()
+        return anomaly_scores
