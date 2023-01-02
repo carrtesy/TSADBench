@@ -10,7 +10,7 @@ import pickle
 from utils.metrics import get_statistics
 from utils.metrics import PA
 from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score
-from sklearn.metrics import roc_curve, roc_auc_score
+from sklearn.metrics import roc_curve, roc_auc_score, confusion_matrix
 
 class Trainer:
     def __init__(self, args, logger, train_loader, test_loader):
@@ -21,7 +21,6 @@ class Trainer:
         self.threshold_function_map = {
             "oracle": self.oracle_thresholding,
         }
-        self.logger.info(f"{self.model}")
 
     @torch.no_grad()
     def infer(self):
@@ -49,12 +48,17 @@ class Trainer:
         p = precision_score(gt, pred, zero_division=1)
         r = recall_score(gt, pred, zero_division=1)
         f1 = f1_score(gt, pred, zero_division=1)
+        tn, fp, fn, tp = confusion_matrix(gt, pred).ravel()
 
         result.update({
             "Accuracy": acc,
             "Precision": p,
             "Recall": r,
             "F1": f1,
+            "tn": tn,
+            "fp": fp,
+            "fn": fn,
+            "tp": tp
         })
         wandb.sklearn.plot_confusion_matrix(gt, pred, labels=["normal", "abnormal"])
 
@@ -64,11 +68,16 @@ class Trainer:
         p = precision_score(gt, pa_pred, zero_division=1)
         r = recall_score(gt, pa_pred, zero_division=1)
         f1 = f1_score(gt, pa_pred, zero_division=1)
+        tn, fp, fn, tp = confusion_matrix(gt, pa_pred).ravel()
         result.update({
             "Accuracy (PA)": acc,
             "Precision (PA)": p,
             "Recall (PA)": r,
             "F1 (PA)": f1,
+            "tn (PA)": tn,
+            "fp (PA)": fp,
+            "fn (PA)": fn,
+            "tp (PA)": tp,
         })
         wandb.sklearn.plot_confusion_matrix(gt, pa_pred, labels=["normal", "abnormal"])
         return result
@@ -126,13 +135,25 @@ class Trainer:
     @torch.no_grad()
     def oracle_thresholding(self, gt, anomaly_scores):
         '''
-        Find the threshold according to Youden's J statistic,
-        which maximizes (tpr-fpr)
+        Find the threshold that maximizes f1-score
         '''
         self.logger.info("Oracle Thresholding")
+        P, N = (gt == 1).sum(), (gt == 0).sum()
         fpr, tpr, thresholds = roc_curve(gt, anomaly_scores)
-        J = tpr - fpr
-        idx = np.argmax(J)
+
+        fp = np.array(fpr * N, dtype=int)
+        tn = np.array(N - fp, dtype=int)
+        tp = np.array(tpr * P, dtype=int)
+        fn = np.array(P - tp, dtype=int)
+
+        eps = 1e-6
+        precision = tp / np.maximum(tp + fp, eps)
+        recall = tp / np.maximum(tp + fn, eps)
+        f1 = 2 * (precision * recall) / np.maximum(precision + recall, eps)
+        idx = np.argmax(f1)
         best_threshold = thresholds[idx]
-        self.logger.info(f"Best threshold found at: {best_threshold}, with fpr: {fpr[idx]}, tpr: {tpr[idx]}")
+        self.logger.info(f"Best threshold found at: {best_threshold}, "
+                         f"with fpr: {fpr[idx]}, tpr: {tpr[idx]}\n"
+                         f"tn: {tn[idx]} fn: {fn[idx]}\n"
+                         f"fp: {fp[idx]} tp: {tp[idx]}")
         return best_threshold
