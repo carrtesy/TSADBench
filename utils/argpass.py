@@ -1,6 +1,7 @@
 import argparse
 import os
 import torch
+from easydict import EasyDict as edict
 
 def prepare_arguments(parser):
     '''
@@ -124,7 +125,17 @@ def prepare_arguments(parser):
     return args
 
 
-
+def EDA_prep_arguments(window_size=96, dataset="SWaT", scaler="std"):
+    return edict({
+        "home_dir": ".",
+        "window_size": window_size,
+        "stride": 1,
+        "dataset": dataset,
+        "batch_size": 64,
+        "eval_batch_size": 64*3,
+        "scaler": scaler,
+        "window_anomaly": False,
+    })
 
 '''
 Saved for future use.
