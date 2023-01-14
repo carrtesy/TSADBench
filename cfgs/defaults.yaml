@@ -1,0 +1,35 @@
+# Exp ID
+exp_id: test
+
+# Data Preprocessing
+dataset: NeurIPS-TS-MUL
+batch_size: 64
+eval_batch_size: 64
+window_size: 12
+stride: 1
+scaler: std
+
+# Problem Scheme
+window_anomaly: False
+
+# Training Hyperparameters
+lr: 1e-03
+epochs: 30
+
+# Saving Configs & Paths
+log_freq: 10
+checkpoints: ./checkpoints
+logs: ./logs
+outputs: ./outputs
+
+# Thresholding
+thresholding: oracle
+
+# others
+load_pretrained: True
+eval_every_epoch: False
+anomaly_reduction_mode: mean
+
+# Model-specific arguments
+defaults:
+  - model: OCSVM

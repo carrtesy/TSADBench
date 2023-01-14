@@ -1,0 +1,32 @@
+program: main.py #./scripts/USAD.sh
+method: bayes
+name: USAD_NeurIPS-TS-MUL
+project: TSADBench
+entity: carrtesy
+metric:
+  name: F1
+  goal: maximize
+parameters:
+  lr:
+    min: 0.0001
+    max: 0.001
+  epochs:
+    value: 30
+  dataset:
+    value: "NeurIPS-TS-MUL"
+  model:
+    value: IsolationForest
+  model.n_estimators:
+    min: 10
+    max: 100
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - ${args_no_hyphens}
+
+early_terminate:
+  type: hyperband
+  max_iter: 100
+  s: 3

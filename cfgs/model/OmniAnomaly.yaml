@@ -1,0 +1,5 @@
+model: OmniAnomaly
+hidden_dim: 128
+z_dim: 128
+dense_dim: 128
+beta: 1e-06

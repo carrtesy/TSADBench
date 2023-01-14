@@ -19,7 +19,7 @@ class SklearnModelTrainer(Trainer):
 
     def train(self):
         X = self.train_loader.dataset.x
-        self.logger.info(f"training {self.args.model}")
+        self.logger.info(f"training {self.args.model.name}")
         self.model.fit(X)
         self.logger.info(f"training complete.")
         self.checkpoint(os.path.join(self.args.checkpoint_path, f"best.pth"))

@@ -1,0 +1,5 @@
+model: LSTMEncDec
+latent_dim: 128
+num_layers: 3
+dropout: 0.1
+subseq_length: 100

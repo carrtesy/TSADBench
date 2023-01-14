@@ -1,1 +1,9 @@
 .idea/
+/logs/
+/outputs/
+/wandb/
+*.ipynb_checkpoints*
+/EDA_logs
+/wandb/
+/checkpoints/
+.ipynb_checkpoints/

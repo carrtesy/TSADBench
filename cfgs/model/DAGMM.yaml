@@ -1,0 +1,8 @@
+model: DAGMM
+num_epochs: 200
+batch_size: 1024
+gmm_k: 4
+latent_dim: 3
+lambda_energy: 0.1
+lambda_cov_diag: 0.005
+grad_clip: 5
