@@ -1,4 +1,4 @@
-model: LSTMVAE
+name: LSTMVAE
 hidden_dim: 32
 z_dim: 3
 n_layers: 2

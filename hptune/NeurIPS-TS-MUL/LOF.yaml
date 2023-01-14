@@ -1,27 +1,16 @@
-program: main.py #./scripts/USAD.sh
+program: main.py
 method: bayes
-name: USAD_NeurIPS-TS-MUL
+name: LOF_NeurIPS-TS-MUL
 project: TSADBench
 entity: carrtesy
 metric:
   name: F1
   goal: maximize
 parameters:
-  lr:
-    min: 0.0001
-    max: 0.001
-  epochs:
-    value: 30
   dataset:
     value: "NeurIPS-TS-MUL"
   model:
-    value: USAD
-  model.beta:
-    min: 0.0001
-    max: 0.1
-  model.latent_dim:
-    min: 32
-    max: 64
+    value: LOF
 
 command:
   - ${env}

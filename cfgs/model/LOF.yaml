@@ -1,2 +1,2 @@
-model: LOF
+name: LOF
 n_jobs: 1

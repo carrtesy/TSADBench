@@ -39,7 +39,7 @@ class AnomalyTransformer_Trainer(Trainer):
             win_size=self.args.window_size,
             enc_in=self.args.num_channels,
             c_out=self.args.num_channels,
-            e_layers=self.args.e_layers,
+            e_layers=self.args.model.e_layers,
         ).to(self.args.device)
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=args.lr)
         self.threshold_function_map = {
@@ -81,9 +81,9 @@ class AnomalyTransformer_Trainer(Trainer):
 
                 rec_loss = self.criterion(output, input)
 
-                loss1_list.append((rec_loss - self.args.k * series_loss).item())
-                loss1 = rec_loss - self.args.k * series_loss
-                loss2 = rec_loss + self.args.k * prior_loss
+                loss1_list.append((rec_loss - self.args.model.k * series_loss).item())
+                loss1 = rec_loss - self.args.model.k * series_loss
+                loss2 = rec_loss + self.args.model.k * prior_loss
 
                 if (i + 1) % 100 == 0:
                     speed = (time.time() - time_now) / iter_count
@@ -107,7 +107,7 @@ class AnomalyTransformer_Trainer(Trainer):
 
 
     def calculate_anomaly_scores(self):
-        temperature = self.args.temperature
+        temperature = self.args.model.temperature
         criterion = nn.MSELoss(reduce=False)
 
         attens_energy = []
@@ -138,7 +138,7 @@ class AnomalyTransformer_Trainer(Trainer):
 
     @torch.no_grad()
     def anomaly_transformer_thresholding(self, gt, anomaly_scores):
-        temperature = self.args.temperature
+        temperature = self.args.model.temperature
         criterion = nn.MSELoss(reduce=False)
 
         # (1) statistics on the train set
@@ -193,7 +193,7 @@ class AnomalyTransformer_Trainer(Trainer):
         attens_energy = np.concatenate(attens_energy, axis=0).reshape(-1)
         test_energy = np.array(attens_energy)
         combined_energy = np.concatenate([train_energy, test_energy], axis=0)
-        threshold = np.percentile(combined_energy, 100 - self.args.anomaly_ratio)
+        threshold = np.percentile(combined_energy, 100 - self.args.model.anomaly_ratio)
         return threshold
 
 
@@ -203,9 +203,9 @@ class DAGMM_Trainer(Trainer):
     def __init__(self, args, logger, train_loader, test_loader):
         super(DAGMM_Trainer, self).__init__(args=args, logger=logger, train_loader=train_loader, test_loader=test_loader)
         self.model = DAGMM(
-            n_gmm=self.args.gmm_k,
+            n_gmm=self.args.model.gmm_k,
             input_dim=self.args.window_size*self.args.num_channels,
-            latent_dim=self.args.latent_dim,
+            latent_dim=self.args.model.latent_dim,
 
         ).to(self.args.device)
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.args.lr)
@@ -257,11 +257,11 @@ class DAGMM_Trainer(Trainer):
     def _process_batch(self, batch_data):
         enc, dec, z, gamma = self.model(batch_data)
         total_loss, sample_energy, recon_error, cov_diag = self.model.loss_function(
-            batch_data, dec, z, gamma, self.args.lambda_energy, self.args.lambda_cov_diag
+            batch_data, dec, z, gamma, self.args.model.lambda_energy, self.args.model.lambda_cov_diag
         )
         self.model.zero_grad()
         total_loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.args.grad_clip)
+        torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.args.model.grad_clip)
         self.optimizer.step()
         return total_loss, sample_energy, recon_error, cov_diag
 
@@ -369,7 +369,7 @@ class DeepSVDD_Trainer(Trainer):
 
     def train(self):
         X = self.train_loader.dataset.x
-        self.logger.info(f"training {self.args.model}")
+        self.logger.info(f"training {self.args.model.name}")
         self.model.fit(X)
         self.logger.info(f"training complete.")
         self.checkpoint(os.path.join(self.args.checkpoint_path, f"best.pth"))
@@ -426,10 +426,10 @@ class THOC_Trainer(Trainer):
         self.model = THOC(
             C=self.args.num_channels,
             W=self.args.window_size,
-            n_hidden=self.args.hidden_dim,
+            n_hidden=self.args.model.hidden_dim,
             device=self.args.device
         ).to(self.args.device)
-        self.optimizer = torch.optim.AdamW(params=self.model.parameters(), lr=self.args.lr, weight_decay=self.args.L2_reg)
+        self.optimizer = torch.optim.AdamW(params=self.model.parameters(), lr=self.args.lr, weight_decay=self.args.model.L2_reg)
 
     def train(self):
         wandb.watch(self.model, log="all", log_freq=100)
@@ -476,7 +476,7 @@ class THOC_Trainer(Trainer):
             out.update({k: loss_dict[k].item()})
 
         self.optimizer.zero_grad()
-        loss = loss_dict["L_THOC"] + self.args.LAMBDA_orth * loss_dict["L_orth"] + self.args.LAMBDA_TSS * loss_dict["L_TSS"]
+        loss = loss_dict["L_THOC"] + self.args.model.LAMBDA_orth * loss_dict["L_orth"] + self.args.model.LAMBDA_TSS * loss_dict["L_TSS"]
         loss.backward()
         self.optimizer.step()
 

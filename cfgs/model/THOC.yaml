@@ -1,4 +1,4 @@
-model: THOC
+name: THOC
 hidden_dim: 128
 L2_reg: 1.0
 LAMBDA_orth: 1.0

@@ -1,5 +1,5 @@
 # Exp ID
-exp_id: test
+exp_id: default
 
 # Data Preprocessing
 dataset: NeurIPS-TS-MUL

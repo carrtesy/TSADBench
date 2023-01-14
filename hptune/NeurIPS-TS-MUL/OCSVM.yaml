@@ -1,0 +1,24 @@
+program: main.py
+method: bayes
+name: OCSVM_NeurIPS-TS-MUL
+project: TSADBench
+entity: carrtesy
+metric:
+  name: F1
+  goal: maximize
+parameters:
+  dataset:
+    value: "NeurIPS-TS-MUL"
+  model:
+    value: OCSVM
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - ${args_no_hyphens}
+
+early_terminate:
+  type: hyperband
+  max_iter: 100
+  s: 3

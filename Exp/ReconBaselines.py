@@ -30,9 +30,9 @@ class LSTMEncDec_Trainer(ReconModelTrainer):
         self.model = LSTMEncDec(
             input_dim=self.args.num_channels,
             window_size=self.args.window_size,
-            latent_dim=self.args.latent_dim,
-            num_layers=self.args.num_layers,
-            dropout=self.args.dropout,
+            latent_dim=self.args.model.latent_dim,
+            num_layers=self.args.model.num_layers,
+            dropout=self.args.model.dropout,
         ).to(self.args.device)
 
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.args.lr)
@@ -99,9 +99,9 @@ class LSTMVAE_Trainer(ReconModelTrainer):
         super(LSTMVAE_Trainer, self).__init__(args=args, logger=logger, train_loader=train_loader, test_loader=test_loader)
         self.model = LSTMVAE(
             input_dim=self.args.num_channels,
-            hidden_dim=self.args.hidden_dim,
-            z_dim=self.args.z_dim,
-            n_layers=self.args.n_layers,
+            hidden_dim=self.args.model.hidden_dim,
+            z_dim=self.args.model.z_dim,
+            n_layers=self.args.model.n_layers,
         ).to(self.args.device)
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.args.lr)
 
@@ -118,7 +118,7 @@ class LSTMVAE_Trainer(ReconModelTrainer):
         self.optimizer.zero_grad()
         recon_loss = F.mse_loss(Xhat, X)
         KLD_loss = self.gaussian_prior_KLD(mu, logvar)
-        loss = recon_loss + self.args.beta * KLD_loss
+        loss = recon_loss + self.args.model.beta * KLD_loss
         loss.backward()
         self.optimizer.step()
 
@@ -153,17 +153,17 @@ class USAD_Trainer(ReconModelTrainer):
         super(USAD_Trainer, self).__init__(args=args, logger=logger, train_loader=train_loader, test_loader=test_loader)
 
         # assert moving average output to be same as input
-        assert self.args.dsr % 2
+        assert self.args.model.dsr % 2
         self.moving_avg = torch.nn.AvgPool1d(
-            kernel_size=self.args.dsr,
+            kernel_size=self.args.model.dsr,
             stride=1,
-            padding=(self.args.dsr - 1)//2,
+            padding=(self.args.model.dsr - 1)//2,
             count_include_pad=False,
         ).to(self.args.device)
 
         self.model = USAD(
             input_size=args.window_size * args.num_channels,
-            latent_space_size=args.latent_dim,
+            latent_space_size=args.model.latent_dim,
         ).to(self.args.device)
 
         self.optimizer1 = torch.optim.Adam(params=self.model.parameters(), lr=args.lr)
@@ -232,7 +232,7 @@ class USAD_Trainer(ReconModelTrainer):
         recon_errors = []
         for i, batch_data in enumerate(eval_iterator):
             X = batch_data[0].to(self.args.device)
-            recon_error = self.recon_error_criterion(X, self.args.alpha, self.args.beta).to("cpu")
+            recon_error = self.recon_error_criterion(X, self.args.model.alpha, self.args.model.beta).to("cpu")
             recon_errors.append(recon_error)
         recon_errors = np.concatenate(recon_errors, axis=0)
         return recon_errors
@@ -256,9 +256,9 @@ class OmniAnomaly_Trainer(ReconModelTrainer):
 
         self.model = OmniAnomaly(
             in_dim=self.args.num_channels,
-            hidden_dim=self.args.hidden_dim,
-            z_dim=self.args.z_dim,
-            dense_dim=self.args.dense_dim,
+            hidden_dim=self.args.model.hidden_dim,
+            z_dim=self.args.model.z_dim,
+            dense_dim=self.args.model.dense_dim,
             out_dim=self.args.num_channels,
         ).to(self.args.device)
 
@@ -278,7 +278,7 @@ class OmniAnomaly_Trainer(ReconModelTrainer):
         self.optimizer.zero_grad()
         recon_loss = F.mse_loss(Xhat, X)
         KLD_loss = self.gaussian_prior_KLD(mu, logvar)
-        self.beta = min(self.iter * self.args.beta, 1)
+        self.beta = min(self.iter * self.args.model.beta, 1)
         loss = recon_loss + self.beta * KLD_loss
         loss.backward()
         self.optimizer.step()

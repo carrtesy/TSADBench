@@ -1,4 +1,4 @@
-model: DAGMM
+name: DAGMM
 num_epochs: 200
 batch_size: 1024
 gmm_k: 4

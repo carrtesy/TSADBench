@@ -7,11 +7,6 @@ metric:
   name: F1
   goal: maximize
 parameters:
-  lr:
-    min: 0.0001
-    max: 0.001
-  epochs:
-    value: 30
   dataset:
     value: "NeurIPS-TS-MUL"
   model:
