@@ -2,6 +2,24 @@
 
 This repository contains Time-Series Anomaly Detection datasets, models, and their implementations.
 
+## QuickRun
+```bash
+python main.py dataset=${dataset_name} model={model_name} {{other arguments}}
+python main.py dataset=NeurIPS-TS-MUL model=USAD exp_id=default model.latent_dim=40 # example
+```
+for more script running examples, 
+take a look at [scripts dir](https://github.com/carrtesy/TSADBench/tree/master/scripts).
+
+## Hyperparameter Tuning
+This repo utilizes [wandb](https://wandb.ai/site) and [hydra](https://hydra.cc/docs/intro/) for experiment tracking.
+You can tune your hyperparameters via:
+```bash
+wandb sweep ${filename}
+wandb agent ${sweep_id}
+```
+For hyperparameter tuning examples, take a look at [hptune dir](https://github.com/carrtesy/TSADBench/tree/master/hptune)
+
+
 ## Dataset preparation
 
 For list of dataset details, please refer to our [notion dataset page](https://carrtesy.notion.site/79cb1d595ec746a3a4c8371cedb2c608?v=440fdfeea2dc489d806e72b85d3d4da6). 
