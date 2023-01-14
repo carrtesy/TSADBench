@@ -14,10 +14,10 @@ take a look at [scripts dir](https://github.com/carrtesy/TSADBench/tree/master/s
 This repo utilizes [wandb](https://wandb.ai/site) and [hydra](https://hydra.cc/docs/intro/) for experiment tracking.
 You can tune your hyperparameters via:
 ```bash
-wandb sweep ${filename}
+wandb sweep ${yaml_file}
 wandb agent ${sweep_id}
 ```
-For hyperparameter tuning examples, take a look at [hptune dir](https://github.com/carrtesy/TSADBench/tree/master/hptune)
+For hyperparameter tuning examples, take a look at [hptune dir](https://github.com/carrtesy/TSADBench/tree/master/hptune).
 
 
 ## Dataset preparation
