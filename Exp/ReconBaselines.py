@@ -10,7 +10,6 @@ from models.USAD import USAD
 from models.OmniAnomaly import OmniAnomaly
 
 # utils
-from utils.metrics import get_statistics
 import os
 
 # others
@@ -74,11 +73,13 @@ class LSTMEncDec_Trainer(ReconModelTrainer):
         out = np.true_divide(out.sum(axis=1), (out!=0).sum(axis=1))
         return out
 
+    @torch.no_grad()
     def calculate_recon_errors(self):
         '''
         :param dataloader: eval dataloader
         :return:  returns (B, L, C) recon loss tensor
         '''
+        self.model.eval()
         eval_iterator = tqdm(
             self.test_loader,
             total=len(self.test_loader),

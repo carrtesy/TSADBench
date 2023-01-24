@@ -2,16 +2,37 @@ import numpy as np
 import copy
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, \
     confusion_matrix, classification_report, roc_auc_score
+import wandb
 
-def get_statistics(gt, pred, score=None):
-    cm = confusion_matrix(gt, pred)
-    a, p, r, f = accuracy_score(gt, pred),\
-              precision_score(gt, pred, zero_division=1), \
-              recall_score(gt, pred, zero_division=1), \
-              f1_score(gt, pred, zero_division=1)
-    auc = roc_auc_score(gt, pred) if score is None else roc_auc_score(gt, score)
-    return cm, a, p, r, f
+def get_auroc(gt, anomaly_scores, threshold):
+    s = anomaly_scores - threshold
+    logit = 1 / (1 + np.exp(-s))  # (N, )
+    pred_prob = np.zeros((len(logit), 2))
+    pred_prob[:, 0], pred_prob[:, 1] = 1 - logit, logit
+    auc = roc_auc_score(gt, anomaly_scores)
+    return auc
 
+def get_summary_stats(gt, pred, desc=""):
+    '''
+    return acc, prec, recall, f1, (tn, fp, fn, tp)
+    '''
+    acc = accuracy_score(gt, pred)
+    p = precision_score(gt, pred, zero_division=1)
+    r = recall_score(gt, pred, zero_division=1)
+    f1 = f1_score(gt, pred, zero_division=1)
+    tn, fp, fn, tp = confusion_matrix(gt, pred).ravel()
+
+    result = {
+        f"Accuracy{desc}": acc,
+        f"Precision{desc}": p,
+        f"Recall{desc}": r,
+        f"F1{desc}": f1,
+        f"tn{desc}": tn,
+        f"fp{desc}": fp,
+        f"fn{desc}": fn,
+        f"tp{desc}": tp
+    }
+    return result
 
 def PA(y, y_pred):
     '''

@@ -8,7 +8,6 @@ import wandb
 
 from tqdm import tqdm
 import pickle
-from utils.metrics import get_statistics
 from utils.metrics import PA
 from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score
 from sklearn.metrics import roc_curve, roc_auc_score

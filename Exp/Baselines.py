@@ -10,11 +10,9 @@ from models.DAGMM import DAGMM
 from models.THOC import THOC
 
 # utils
-from utils.metrics import get_statistics
 from utils.metrics import PA
 from utils.optim import adjust_learning_rate
 from utils.custom_loss import my_kl_loss
-from utils.metrics import get_statistics
 from utils.metrics import PA
 from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score
 from sklearn.metrics import roc_curve, roc_auc_score
@@ -31,6 +29,22 @@ import datetime
 
 from tqdm import tqdm
 import pickle
+
+class RandomModel_Trainer(Trainer):
+    def __init__(self, args, logger, train_loader, test_loader):
+        super(RandomModel_Trainer, self).__init__(args=args, logger=logger, train_loader=train_loader, test_loader=test_loader)
+        self.threshold_function_map = {
+            "oracle": self.oracle_thresholding,
+        }
+    def train(self):
+        return
+
+    def load(self, filepath):
+        return
+
+    def calculate_anomaly_scores(self):
+        shape = self.test_loader.dataset.y.shape
+        return np.random.rand(*shape)
 
 class AnomalyTransformer_Trainer(Trainer):
     def __init__(self, args, logger, train_loader, test_loader):

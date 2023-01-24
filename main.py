@@ -66,6 +66,7 @@ def main(cfg: DictConfig) -> None:
     # Model
     logger.info(f"Preparing {args.model.name} Trainer...")
     Trainers = {
+        "RandomModel": RandomModel_Trainer,
         "OCSVM": OCSVM_Trainer,
         "IsolationForest": IsolationForest_Trainer,
         "LOF": LOF_Trainer,

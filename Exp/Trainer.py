@@ -7,7 +7,7 @@ import wandb
 
 from tqdm import tqdm
 import pickle
-from utils.metrics import get_statistics
+from utils.metrics import get_auroc, get_summary_stats
 from utils.metrics import PA
 from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score
 from sklearn.metrics import roc_curve, roc_auc_score, confusion_matrix
@@ -22,10 +22,8 @@ class Trainer:
             "oracle": self.oracle_thresholding,
         }
 
-    @torch.no_grad()
     def infer(self):
         result = {}
-        self.model.eval()
         gt = self.test_loader.dataset.y
         anomaly_scores = self.calculate_anomaly_scores()
 
@@ -33,58 +31,35 @@ class Trainer:
         threshold = self.get_threshold(gt=gt, anomaly_scores=anomaly_scores)
         result.update({"Threshold": threshold})
 
-        # AUROC
-        s = anomaly_scores - threshold
-        logit = 1/(1+np.exp(-s)) # (N, )
-        pred_prob = np.zeros((len(logit), 2))
-        pred_prob[:, 0], pred_prob[:, 1] = 1-logit, logit
-        wandb.sklearn.plot_roc(gt, pred_prob)
-        auc = roc_auc_score(gt, anomaly_scores)
-        result.update({"AUC": auc})
+        # get eval metrics
+        metrics = self.get_metrics(gt=gt, anomaly_scores=anomaly_scores, threshold=threshold)
+        result.update(metrics)
 
-        # F1
-        pred = (anomaly_scores > threshold).astype(int)
-        acc = accuracy_score(gt, pred)
-        p = precision_score(gt, pred, zero_division=1)
-        r = recall_score(gt, pred, zero_division=1)
-        f1 = f1_score(gt, pred, zero_division=1)
-        tn, fp, fn, tp = confusion_matrix(gt, pred).ravel()
-
-        result.update({
-            "Accuracy": acc,
-            "Precision": p,
-            "Recall": r,
-            "F1": f1,
-            "tn": tn,
-            "fp": fp,
-            "fn": fn,
-            "tp": tp
-        })
-        wandb.sklearn.plot_confusion_matrix(gt, pred, labels=["normal", "abnormal"])
-
-        # F1-PA
-        pa_pred = PA(gt, pred)
-        acc = accuracy_score(gt, pa_pred)
-        p = precision_score(gt, pa_pred, zero_division=1)
-        r = recall_score(gt, pa_pred, zero_division=1)
-        f1 = f1_score(gt, pa_pred, zero_division=1)
-        tn, fp, fn, tp = confusion_matrix(gt, pa_pred).ravel()
-        result.update({
-            "Accuracy (PA)": acc,
-            "Precision (PA)": p,
-            "Recall (PA)": r,
-            "F1 (PA)": f1,
-            "tn (PA)": tn,
-            "fp (PA)": fp,
-            "fn (PA)": fn,
-            "tp (PA)": tp,
-        })
-        wandb.sklearn.plot_confusion_matrix(gt, pa_pred, labels=["normal", "abnormal"])
         return result
 
     def get_threshold(self, gt, anomaly_scores):
         self.logger.info(f"thresholding with algorithm: {self.args.thresholding}")
         return self.threshold_function_map[self.args.thresholding](gt, anomaly_scores)
+
+    def get_metrics(self, gt, anomaly_scores, threshold):
+        result = {}
+        # AUROC
+        auc = get_auroc(gt, anomaly_scores, threshold)
+        result.update({"AUC": auc})
+
+        # F1
+        pred = (anomaly_scores > threshold).astype(int)
+        metrics = get_summary_stats(gt, pred)
+        result.update(metrics)
+        wandb.sklearn.plot_confusion_matrix(gt, pred, labels=["normal", "abnormal"])
+
+        # F1-PA
+        pa_pred = PA(gt, pred)
+        pa_metrics = get_summary_stats(gt, pa_pred, desc="_PA")
+        result.update(pa_metrics)
+        wandb.sklearn.plot_confusion_matrix(gt, pa_pred, labels=["normal", "abnormal"])
+
+        return result
 
     def checkpoint(self, filepath):
         self.logger.info(f"checkpointing: {filepath} @Trainer - torch.save")
