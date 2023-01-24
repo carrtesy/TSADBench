@@ -65,22 +65,23 @@ SMD, PSM, SMAP, MSL are provided in https://github.com/thuml/Anomaly-Transformer
 
 ## Anomaly detection models
 
-1. OCSVM [David M. J. Tax, Robert P. W. Duin:
+1. RandomModel: No training, returns anomaly_score ~ uniform[0,1]
+2. OCSVM [David M. J. Tax, Robert P. W. Duin:
 "Support Vector Data Description.", Mach. Learn. 54(1): 45-66 (2004)](https://homepage.tudelft.nl/a9p19/papers/ML_SVDD_04.pdf)
-2. Isolation Forest [Fei Tony Liu, Kai Ming Ting, Zhi-Hua Zhou:
+3. Isolation Forest [Fei Tony Liu, Kai Ming Ting, Zhi-Hua Zhou:
 Isolation Forest. ICDM 2008: 413-422](https://cs.nju.edu.cn/zhouzh/zhouzh.files/publication/icdm08b.pdf?q=isolation-forest)
-3. LOF [Markus M. Breunig, Hans-Peter Kriegel, Raymond T. Ng, Jörg Sander:
+4. LOF [Markus M. Breunig, Hans-Peter Kriegel, Raymond T. Ng, Jörg Sander:
 LOF: Identifying Density-Based Local Outliers. SIGMOD Conference 2000: 93-104](https://dl.acm.org/doi/pdf/10.1145/335191.335388) 
-4. LSTMEncDec [Malhotra, Pankaj, et al. "LSTM-based encoder-decoder for multi-sensor anomaly detection."(2016).](https://arxiv.org/pdf/1607.00148v2.pdf)
-5. LSTMVAE: [Daehyung Park, Yuuna Hoshi, Charles C. Kemp:
+5. LSTMEncDec [Malhotra, Pankaj, et al. "LSTM-based encoder-decoder for multi-sensor anomaly detection."(2016).](https://arxiv.org/pdf/1607.00148v2.pdf)
+6. LSTMVAE: [Daehyung Park, Yuuna Hoshi, Charles C. Kemp:
 A Multimodal Anomaly Detector for Robot-Assisted Feeding Using an LSTM-Based Variational Autoencoder. IEEE Robotics Autom. Lett. 3(2): 1544-1551 (2018)](https://arxiv.org/pdf/1711.00614.pdf)
-6. OmniAnomaly [Su, Ya, et al. "Robust anomaly detection for multivariate time series through stochastic recurrent neural network." Proceedings of the 25th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining. 2019.](https://dl.acm.org/doi/pdf/10.1145/3292500.3330672?casa_token=k52TYpPsw2QAAAAA:5PQRaCv7bH507y-pnpvFqLM_TDUmMMTlZU24P8coKzZmT6LVtFC-8dh8AmhTJ_kYZFl11NyxBSGi)
-7. USAD [Audibert, Julien, et al. "Usad: Unsupervised anomaly detection on multivariate time series." Proceedings of the 26th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining. 2020.](https://dl.acm.org/doi/pdf/10.1145/3394486.3403392)
-8. DeepSVDD [Lukas Ruff, Nico Görnitz, Lucas Deecke, Shoaib Ahmed Siddiqui, Robert A. Vandermeulen, Alexander Binder, Emmanuel Müller, Marius Kloft:
+7. OmniAnomaly [Su, Ya, et al. "Robust anomaly detection for multivariate time series through stochastic recurrent neural network." Proceedings of the 25th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining. 2019.](https://dl.acm.org/doi/pdf/10.1145/3292500.3330672?casa_token=k52TYpPsw2QAAAAA:5PQRaCv7bH507y-pnpvFqLM_TDUmMMTlZU24P8coKzZmT6LVtFC-8dh8AmhTJ_kYZFl11NyxBSGi)
+8. USAD [Audibert, Julien, et al. "Usad: Unsupervised anomaly detection on multivariate time series." Proceedings of the 26th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining. 2020.](https://dl.acm.org/doi/pdf/10.1145/3394486.3403392)
+9. DeepSVDD [Lukas Ruff, Nico Görnitz, Lucas Deecke, Shoaib Ahmed Siddiqui, Robert A. Vandermeulen, Alexander Binder, Emmanuel Müller, Marius Kloft:
 Deep One-Class Classification. ICML 2018: 4390-4399](https://proceedings.mlr.press/v80/ruff18a.html)
-9. DAGMM [Bo Zong, Qi Song, Martin Renqiang Min, Wei Cheng, Cristian Lumezanu, Dae-ki Cho, Haifeng Chen: Deep Autoencoding Gaussian Mixture Model for Unsupervised Anomaly Detection. ICLR (Poster) 2018](https://openreview.net/forum?id=BJJLHbb0-)
-10. THOC [Lifeng Shen, Zhuocong Li, James T. Kwok: Timeseries Anomaly Detection using Temporal Hierarchical One-Class Network. NeurIPS 2020](https://proceedings.neurips.cc/paper/2020/file/97e401a02082021fd24957f852e0e475-Paper.pdf)
-11. Anomaly Transformer [Jiehui Xu, Haixu Wu, Jianmin Wang, Mingsheng Long:
+10. DAGMM [Bo Zong, Qi Song, Martin Renqiang Min, Wei Cheng, Cristian Lumezanu, Dae-ki Cho, Haifeng Chen: Deep Autoencoding Gaussian Mixture Model for Unsupervised Anomaly Detection. ICLR (Poster) 2018](https://openreview.net/forum?id=BJJLHbb0-)
+11. THOC [Lifeng Shen, Zhuocong Li, James T. Kwok: Timeseries Anomaly Detection using Temporal Hierarchical One-Class Network. NeurIPS 2020](https://proceedings.neurips.cc/paper/2020/file/97e401a02082021fd24957f852e0e475-Paper.pdf)
+12. Anomaly Transformer [Jiehui Xu, Haixu Wu, Jianmin Wang, Mingsheng Long:
 Anomaly Transformer: Time Series Anomaly Detection with Association Discrepancy. ICLR 2022
 ](https://openreview.net/forum?id=LzQQ89U1qm_)
 
