@@ -279,8 +279,9 @@ class DAGMM_Trainer(Trainer):
             test_energy.append(sample_energy.data.cpu().numpy())
             test_z.append(z.data.cpu().numpy())
             test_labels.append(labels.numpy())
-
         test_energy = np.concatenate(test_energy, axis=0)
+        init_pred = test_energy[0].repeat(self.args.window_size - 1)
+        test_energy = np.concatenate((init_pred, test_energy))
         return test_energy
 
     @torch.no_grad()

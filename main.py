@@ -26,17 +26,18 @@
 ######################################################
 
 import wandb
+import hydra
+from omegaconf import DictConfig
+
 from utils.logger import make_logger
 from utils.argpass import prepare_arguments
+from utils.tools import SEED_everything
 
 import warnings
 from data.load_data import DataFactory
 from Exp.SklearnBaselines import *
 from Exp.ReconBaselines import *
 from Exp.Baselines import *
-from utils.tools import SEED_everything
-import hydra
-from omegaconf import DictConfig
 
 SEED_everything(42)
 warnings.filterwarnings("ignore")
