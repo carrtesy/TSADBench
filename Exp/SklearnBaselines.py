@@ -11,7 +11,7 @@ class LOF_Trainer(SklearnModelTrainer):
         super(LOF_Trainer, self).__init__(args, logger, train_loader, test_loader)
         self.model = LocalOutlierFactor(
             novelty=True,
-            contamination=self.args.contamination,
+            contamination=self.args.model.contamination,
             n_jobs=self.args.model.n_jobs,
         )
 
@@ -31,6 +31,6 @@ class OCSVM_Trainer(SklearnModelTrainer):
         super(OCSVM_Trainer, self).__init__(args, logger, train_loader, test_loader)
         self.model = OneClassSVM(
             max_iter=self.args.model.max_iter,
-            nu=self.args.nu,
+            nu=self.args.model.nu,
             verbose=True,
         )

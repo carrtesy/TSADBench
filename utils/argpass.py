@@ -43,12 +43,12 @@ def configure_exp_id(args):
         dataset = args.dataset
         new_exp_id = f"{model}_{dataset}"
         if model == "OCSVM":
-            pass
+            new_exp_id += f"_nu_{args.model.nu}"
         elif model == "IsolationForest":
             new_exp_id += f"_n_estimator_{args.model.n_estimators}"
             new_exp_id += f"_contamination_{args.model.contamination}"
         elif model == "LOF":
-            pass
+            new_exp_id += f"_contamination_{args.model.contamination}"
         elif model == "LSTMEncDec":
             new_exp_id += f"_latent_dim_{args.model.latent_dim}"
             new_exp_id += f"_num_layers_{args.model.num_layers}"
