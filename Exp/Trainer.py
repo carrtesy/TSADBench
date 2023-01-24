@@ -4,6 +4,7 @@ import numpy as np
 import copy
 import os
 import wandb
+import matplotlib.pyplot as plt
 
 from tqdm import tqdm
 import pickle
@@ -22,6 +23,7 @@ class Trainer:
             "oracle": self.oracle_thresholding,
         }
 
+
     def infer(self):
         result = {}
         gt = self.test_loader.dataset.y
@@ -35,11 +37,15 @@ class Trainer:
         metrics = self.get_metrics(gt=gt, anomaly_scores=anomaly_scores, threshold=threshold)
         result.update(metrics)
 
+        # visualize anomaly scores, and save with np
+        self.plot_anomaly_scores(gt, anomaly_scores, threshold)
         return result
+
 
     def get_threshold(self, gt, anomaly_scores):
         self.logger.info(f"thresholding with algorithm: {self.args.thresholding}")
         return self.threshold_function_map[self.args.thresholding](gt, anomaly_scores)
+
 
     def get_metrics(self, gt, anomaly_scores, threshold):
         result = {}
@@ -61,19 +67,55 @@ class Trainer:
 
         return result
 
+
+    def plot_anomaly_scores(self, gt, anomaly_scores, threshold):
+        '''
+        plot anomaly score with gt & threshold, and save it to {args.plots} dir.
+        '''
+        # plot
+        fig, ax = plt.subplots(1, 1, figsize=(20, 12))
+        ax.set_title("Anomaly Score Visualization")
+        ax.plot(anomaly_scores, label="anomaly scores")
+        ax.axhline(y=threshold, color="black", label="threshold")
+        s, e = None, None
+        for i, label in enumerate(gt):
+            if label == 1 and s is None:
+                s = i
+            elif label == 0 and s is not None:
+                e = i - 1
+                if (e - s) > 0:
+                    ax.axvspan(s, e, facecolor='red', alpha=0.5)
+                else:
+                    ax.plot(s, anomaly_scores[i], 'ro')
+                s, e = None, None
+        ax.legend()
+        plt.savefig(os.path.join(self.args.plot_path, "anomaly_vis.png"))
+
+        # save
+        with open(os.path.join(self.args.output_path, "anomaly_scores.npy"), 'wb') as f:
+            np.save(f, anomaly_scores)
+        with open(os.path.join(self.args.output_path, "gt.npy"), 'wb') as f:
+            np.save(f, gt)
+        with open(os.path.join(self.args.output_path, "threshold.pkl"), 'wb') as f:
+            pickle.dump(threshold, f)
+
+
     def checkpoint(self, filepath):
         self.logger.info(f"checkpointing: {filepath} @Trainer - torch.save")
         torch.save(self.model.state_dict(), filepath)
+
 
     def load(self, filepath):
         self.logger.info(f"loading: {filepath} @Trainer - torch.load_state_dict")
         self.model.load_state_dict(torch.load(filepath))
         self.model.to(self.args.device)
 
+
     @staticmethod
     def save_dictionary(dictionary, filepath):
         with open(filepath, "wb") as f:
             pickle.dump(dictionary, f)
+
 
     @staticmethod
     def reduce(anomaly_scores, stride=1, mode="mean", window_anomaly=False):
@@ -106,6 +148,7 @@ class Trainer:
             else:
                 raise NotImplementedError
         return out
+
 
     @torch.no_grad()
     def oracle_thresholding(self, gt, anomaly_scores):

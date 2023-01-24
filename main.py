@@ -54,7 +54,7 @@ def main(cfg: DictConfig) -> None:
     wandb.config.update(args)
 
     # Logger
-    logger = make_logger(os.path.join(args.logging_path, f'{args.exp_id}.log'))
+    logger = make_logger(os.path.join(args.log_path, f'{args.exp_id}.log'))
     logger.info(f"Configurations: {args}")
 
     # Data
