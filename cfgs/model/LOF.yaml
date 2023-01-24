@@ -1,2 +1,3 @@
 name: LOF
+contamination: 0.01
 n_jobs: 1

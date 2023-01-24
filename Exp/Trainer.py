@@ -1,17 +1,16 @@
 import torch
-import torch.nn.functional as F
 import numpy as np
-import copy
 import os
 import wandb
+import matplotlib
 import matplotlib.pyplot as plt
 
-from tqdm import tqdm
 import pickle
 from utils.metrics import get_auroc, get_summary_stats
 from utils.metrics import PA
-from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score
-from sklearn.metrics import roc_curve, roc_auc_score, confusion_matrix
+from sklearn.metrics import roc_curve
+
+matplotlib.rcParams['agg.path.chunksize'] = 10000
 
 class Trainer:
     def __init__(self, args, logger, train_loader, test_loader):
@@ -22,6 +21,10 @@ class Trainer:
         self.threshold_function_map = {
             "oracle": self.oracle_thresholding,
         }
+
+
+    def train(self):
+        pass
 
 
     def infer(self):

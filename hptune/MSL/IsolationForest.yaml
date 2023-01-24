@@ -1,6 +1,6 @@
 program: main.py
 method: bayes
-name: IsolationForest_NeurIPS-TS-MUL
+name: IsolationForest_MSL
 project: TSADBench
 entity: carrtesy
 metric:
@@ -8,7 +8,7 @@ metric:
   goal: maximize
 parameters:
   dataset:
-    value: "NeurIPS-TS-MUL"
+    value: "MSL"
   model:
     value: IsolationForest
   model.n_estimators:

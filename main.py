@@ -95,10 +95,14 @@ def main(cfg: DictConfig) -> None:
     logger.info(f"Loading from best path...")
     trainer.load(os.path.join(args.checkpoint_path, f"best.pth"))
     result = trainer.infer()
+
+    # 6. final results
     wandb.log(result)
     logger.info(f"=== Final Result ===")
     for key in result:
         logger.info(f"{key}: {result[key]}")
+        with open(os.path.join(args.result_path, f"{key}.txt"), 'w') as f:
+            f.write(str(result[key]))
 
 if __name__ == "__main__":
     main()

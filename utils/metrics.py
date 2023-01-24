@@ -1,8 +1,8 @@
 import numpy as np
 import copy
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, \
-    confusion_matrix, classification_report, roc_auc_score
-import wandb
+    confusion_matrix, roc_auc_score
+
 
 def get_auroc(gt, anomaly_scores, threshold):
     s = anomaly_scores - threshold
@@ -11,6 +11,7 @@ def get_auroc(gt, anomaly_scores, threshold):
     pred_prob[:, 0], pred_prob[:, 1] = 1 - logit, logit
     auc = roc_auc_score(gt, anomaly_scores)
     return auc
+
 
 def get_summary_stats(gt, pred, desc=""):
     '''
@@ -33,6 +34,7 @@ def get_summary_stats(gt, pred, desc=""):
         f"tp{desc}": tp
     }
     return result
+
 
 def PA(y, y_pred):
     '''

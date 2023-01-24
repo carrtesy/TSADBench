@@ -22,6 +22,7 @@ checkpoint_path: ./checkpoints
 log_path: ./logs
 output_path: ./outputs
 plot_path: ./plots
+result_path: ./results
 
 # Thresholding
 thresholding: oracle

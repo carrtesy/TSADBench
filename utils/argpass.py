@@ -19,11 +19,13 @@ def prepare_arguments(cfg):
     args.log_path = os.path.join(args.log_path, f"{args.exp_id}")
     args.output_path = os.path.join(args.output_path, f"{args.exp_id}")
     args.plot_path = os.path.join(args.plot_path, f"{args.exp_id}")
+    args.result_path = os.path.join(args.result_path, f"{args.exp_id}")
 
     os.makedirs(args.checkpoint_path, exist_ok=True)
     os.makedirs(args.log_path, exist_ok=True)
     os.makedirs(args.output_path, exist_ok=True)
     os.makedirs(args.plot_path, exist_ok=True)
+    os.makedirs(args.result_path, exist_ok=True)
     args.home_dir = "."
     args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -44,6 +46,7 @@ def configure_exp_id(args):
             pass
         elif model == "IsolationForest":
             new_exp_id += f"_n_estimator_{args.model.n_estimators}"
+            new_exp_id += f"_contamination_{args.model.contamination}"
         elif model == "LOF":
             pass
         elif model == "LSTMEncDec":

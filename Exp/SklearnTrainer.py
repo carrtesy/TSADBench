@@ -8,7 +8,7 @@ import wandb
 
 from tqdm import tqdm
 import pickle
-from utils.metrics import PA
+from utils.metrics import PA, get_summary_stats
 from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score
 from sklearn.metrics import roc_curve, roc_auc_score
 
@@ -30,41 +30,34 @@ class SklearnModelTrainer(Trainer):
         # In sklearn, 1 is normal and -1 is abnormal. convert to 1 (abnormal) or 0 (normal)
         pred = (self.model.predict(X) == -1)
 
+        # get eval metrics
+        metrics = self.get_metrics(gt, pred)
+        result.update(metrics)
+
+        return result
+
+    def get_metrics(self, gt, pred):
+        result = {}
+
         # F1
-        acc = accuracy_score(gt, pred)
-        p = precision_score(gt, pred, zero_division=1)
-        r = recall_score(gt, pred, zero_division=1)
-        f1 = f1_score(gt, pred, zero_division=1)
-
-        result.update({
-            "Accuracy": acc,
-            "Precision": p,
-            "Recall": r,
-            "F1": f1,
-        })
-
+        metrics = get_summary_stats(gt, pred)
+        result.update(metrics)
         wandb.sklearn.plot_confusion_matrix(gt, pred, labels=["normal", "abnormal"])
 
         # F1-PA
         pa_pred = PA(gt, pred)
-        acc = accuracy_score(gt, pa_pred)
-        p = precision_score(gt, pa_pred, zero_division=1)
-        r = recall_score(gt, pa_pred, zero_division=1)
-        f1 = f1_score(gt, pa_pred, zero_division=1)
-        result.update({
-            "Accuracy (PA)": acc,
-            "Precision (PA)": p,
-            "Recall (PA)": r,
-            "F1 (PA)": f1,
-        })
+        pa_metrics = get_summary_stats(gt, pa_pred, desc="_PA")
+        result.update(pa_metrics)
         wandb.sklearn.plot_confusion_matrix(gt, pa_pred, labels=["normal", "abnormal"])
 
         return result
+
 
     def checkpoint(self, filepath):
         self.logger.info(f"checkpointing to {filepath}")
         with open(filepath, "wb") as f:
             pickle.dump(self.model, f)
+
 
     def load(self, filepath):
         self.logger.info(f"loading from {filepath}")

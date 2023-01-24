@@ -11,6 +11,7 @@ class LOF_Trainer(SklearnModelTrainer):
         super(LOF_Trainer, self).__init__(args, logger, train_loader, test_loader)
         self.model = LocalOutlierFactor(
             novelty=True,
+            contamination=self.args.contamination,
             n_jobs=self.args.model.n_jobs,
         )
 
@@ -19,6 +20,7 @@ class IsolationForest_Trainer(SklearnModelTrainer):
         super(IsolationForest_Trainer, self).__init__(args, logger, train_loader, test_loader)
         self.model = IsolationForest(
             n_estimators=self.args.model.n_estimators,
+            contamination=self.args.model.contamination,
             n_jobs=self.args.model.n_jobs,
             random_state=self.args.model.random_state,
             verbose=self.args.model.verbose,
@@ -29,5 +31,6 @@ class OCSVM_Trainer(SklearnModelTrainer):
         super(OCSVM_Trainer, self).__init__(args, logger, train_loader, test_loader)
         self.model = OneClassSVM(
             max_iter=self.args.model.max_iter,
+            nu=self.args.nu,
             verbose=True,
         )

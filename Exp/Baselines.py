@@ -36,15 +36,20 @@ class RandomModel_Trainer(Trainer):
         self.threshold_function_map = {
             "oracle": self.oracle_thresholding,
         }
+
+
     def train(self):
         return
+
 
     def load(self, filepath):
         return
 
+
     def calculate_anomaly_scores(self):
         shape = self.test_loader.dataset.y.shape
         return np.random.rand(*shape)
+
 
 class AnomalyTransformer_Trainer(Trainer):
     def __init__(self, args, logger, train_loader, test_loader):
@@ -61,6 +66,7 @@ class AnomalyTransformer_Trainer(Trainer):
             "anomaly_transformer": self.anomaly_transformer_thresholding,
         }
         self.criterion = nn.MSELoss()
+
 
     # code referrence:
     # https://github.com/thuml/Anomaly-Transformer/blob/72a71e5f0847bd14ba0253de899f7b0d5ba6ee97/solver.py#L130
@@ -150,6 +156,7 @@ class AnomalyTransformer_Trainer(Trainer):
         test_energy = np.array(attens_energy)
         return test_energy
 
+
     @torch.no_grad()
     def anomaly_transformer_thresholding(self, gt, anomaly_scores):
         temperature = self.args.model.temperature
@@ -229,6 +236,7 @@ class DAGMM_Trainer(Trainer):
         }
         self.criterion = nn.MSELoss()
 
+
     def train(self):
         wandb.watch(self.model, log="all", log_freq=100)
         self.model.train()
@@ -245,6 +253,7 @@ class DAGMM_Trainer(Trainer):
                 self.checkpoint(os.path.join(self.args.checkpoint_path, f"best.pth"))
                 best_train_stats = train_stats
         return
+
 
     def train_epoch(self):
         log_freq = max(len(self.train_loader) // self.args.log_freq, 1)
@@ -268,6 +277,7 @@ class DAGMM_Trainer(Trainer):
         train_summary /= len(self.train_loader)
         return train_summary
 
+
     def _process_batch(self, batch_data):
         enc, dec, z, gamma = self.model(batch_data)
         total_loss, sample_energy, recon_error, cov_diag = self.model.loss_function(
@@ -278,6 +288,7 @@ class DAGMM_Trainer(Trainer):
         torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.args.model.grad_clip)
         self.optimizer.step()
         return total_loss, sample_energy, recon_error, cov_diag
+
 
     @torch.no_grad()
     def calculate_anomaly_scores(self):
@@ -297,6 +308,7 @@ class DAGMM_Trainer(Trainer):
         init_pred = test_energy[0].repeat(self.args.window_size - 1)
         test_energy = np.concatenate((init_pred, test_energy))
         return test_energy
+
 
     @torch.no_grad()
     def DAGMM_thresholding(self, gt, anomaly_scores):
@@ -382,12 +394,14 @@ class DeepSVDD_Trainer(Trainer):
         super(DeepSVDD_Trainer, self).__init__(args, logger, train_loader, test_loader)
         self.model = DeepSVDD()
 
+
     def train(self):
         X = self.train_loader.dataset.x
         self.logger.info(f"training {self.args.model.name}")
         self.model.fit(X)
         self.logger.info(f"training complete.")
         self.checkpoint(os.path.join(self.args.checkpoint_path, f"best.pth"))
+
 
     def infer(self):
         result = {}
@@ -425,15 +439,18 @@ class DeepSVDD_Trainer(Trainer):
         wandb.sklearn.plot_confusion_matrix(gt, pa_pred, labels=["normal", "abnormal"])
         return result
 
+
     def checkpoint(self, filepath):
         self.logger.info(f"checkpointing to {filepath}")
         with open(filepath, "wb") as f:
             pickle.dump(self.model, f)
 
+
     def load(self, filepath):
         self.logger.info(f"loading from {filepath}")
         with open(filepath, "rb") as f:
             self.model = pickle.load(f)
+
 
 class THOC_Trainer(Trainer):
     def __init__(self, args, logger, train_loader, test_loader):
@@ -445,6 +462,7 @@ class THOC_Trainer(Trainer):
             device=self.args.device
         ).to(self.args.device)
         self.optimizer = torch.optim.AdamW(params=self.model.parameters(), lr=self.args.lr, weight_decay=self.args.model.L2_reg)
+
 
     def train(self):
         wandb.watch(self.model, log="all", log_freq=100)
@@ -468,6 +486,7 @@ class THOC_Trainer(Trainer):
                 best_train_stats = train_stats
         return
 
+
     def train_epoch(self):
         self.model.train()
         log_freq = len(self.train_loader) // self.args.log_freq
@@ -480,6 +499,7 @@ class THOC_Trainer(Trainer):
             train_summary += train_log["summary"]
         train_summary /= len(self.train_loader)
         return train_summary
+
 
     def _process_batch(self, batch_data) -> dict:
         out = dict()
@@ -499,6 +519,7 @@ class THOC_Trainer(Trainer):
             "summary": loss.item(),
         })
         return out
+
 
     def calculate_anomaly_scores(self):
         eval_iterator = tqdm(
