@@ -43,15 +43,20 @@ class DataFactory:
             "std": preprocessing.StandardScaler(),
         }
 
+
     def __call__(self):
+        # prepare data
         self.logger.info(f"Preparing {self.args.dataset} ...")
         train_x, train_y, test_x, test_y = self.load()
         self.logger.info(
             f"train: X - {train_x.shape}, y - {train_y.shape} " +
             f"test: X - {test_x.shape}, y - {test_y.shape}"
         )
+        assert np.isnan(train_x).sum() == 0 and np.isnan(train_y).sum() == 0
+        assert np.isnan(test_x).sum() == 0 and np.isnan(test_y).sum() == 0
         self.logger.info(f"Complete.")
 
+        # dataloader, dataset
         self.logger.info(f"Preparing dataloader...")
         train_dataset, train_loader, test_dataset, test_loader = self.prepare(
             train_x, train_y, test_x, test_y,
@@ -66,6 +71,7 @@ class DataFactory:
             window_anomaly=self.args.window_anomaly
         )
 
+        # shape in batch
         sample_X, sample_y = next(iter(train_loader))
         self.logger.info(f"total train dataset- {len(train_loader)}, "
                          f"batch_X - {sample_X.shape}, "
@@ -79,8 +85,10 @@ class DataFactory:
 
         return train_dataset, train_loader, test_dataset, test_loader
 
+
     def load(self):
         return self.dataset_fn_dict[self.args.dataset](self.home_dir)
+
 
     def prepare(self, train_x, train_y, test_x, test_y,
                 window_size,
@@ -95,12 +103,13 @@ class DataFactory:
                 ):
 
         transform = self.transforms[scaler]
-        train_dataset = self.datasets[dataset_type](train_x, train_y,
-                                                    flag="train", transform=transform,
-                                                    window_size=window_size,
-                                                    stride=stride,
-                                                    window_anomaly=window_anomaly,
-                                                    )
+        train_dataset = self.datasets[dataset_type](
+            train_x, train_y,
+            flag="train", transform=transform,
+            window_size=window_size,
+            stride=stride,
+            window_anomaly=window_anomaly,
+        )
         train_dataloader = DataLoader(
             dataset=train_dataset,
             batch_size=batch_size,
@@ -108,12 +117,13 @@ class DataFactory:
         )
 
         transform = train_dataset.transform
-        test_dataset = self.datasets[dataset_type](test_x, test_y,
-                                                   flag="test", transform=transform,
-                                                   window_size=window_size,
-                                                   stride=stride,
-                                                   window_anomaly=window_anomaly,
-                                                   )
+        test_dataset = self.datasets[dataset_type](
+            test_x, test_y,
+            flag="test", transform=transform,
+            window_size=window_size,
+            stride=stride,
+            window_anomaly=window_anomaly,
+        )
         test_dataloader = DataLoader(
             dataset=test_dataset,
             batch_size=eval_batch_size,
@@ -122,6 +132,7 @@ class DataFactory:
 
 
         return train_dataset, train_dataloader, test_dataset, test_dataloader
+
 
     @staticmethod
     def load_toyUSW(home_dir="."):
@@ -139,7 +150,11 @@ class DataFactory:
         train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
         train_y, test_y = train_y.astype(int), test_y.astype(int)
 
+        assert np.isnan(train_X).sum() == 0 and np.isnan(train_y).sum() == 0
+        assert np.isnan(test_X).sum() == 0 and np.isnan(test_y).sum() == 0
+
         return train_X, train_y, test_X, test_y
+
 
     @staticmethod
     def load_NeurIPS_TS_UNI(home_dir="."):
@@ -153,7 +168,11 @@ class DataFactory:
         train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
         train_y, test_y = train_y.astype(int), test_y.astype(int)
 
+        assert np.isnan(train_X).sum() == 0 and np.isnan(train_y).sum() == 0
+        assert np.isnan(test_X).sum() == 0 and np.isnan(test_y).sum() == 0
+
         return train_X, train_y, test_X, test_y
+
 
     @staticmethod
     def load_NeurIPS_TS_MUL(home_dir="."):
@@ -167,6 +186,9 @@ class DataFactory:
 
         train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
         train_y, test_y = train_y.astype(int), test_y.astype(int)
+
+        assert np.isnan(train_X).sum() == 0 and np.isnan(train_y).sum() == 0
+        assert np.isnan(test_X).sum() == 0 and np.isnan(test_y).sum() == 0
 
         return train_X, train_y, test_X, test_y
 
@@ -195,7 +217,11 @@ class DataFactory:
         train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
         train_y, test_y = train_y.astype(int), test_y.astype(int)
 
+        assert np.isnan(train_X).sum() == 0 and np.isnan(train_y).sum() == 0
+        assert np.isnan(test_X).sum() == 0 and np.isnan(test_y).sum() == 0
+
         return train_X, train_y, test_X, test_y
+
 
     @staticmethod
     def load_WADI(home_dir="."):
@@ -231,7 +257,11 @@ class DataFactory:
         train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
         train_y, test_y = train_y.astype(int), test_y.astype(int)
 
+        assert np.isnan(train_X).sum() == 0 and np.isnan(train_y).sum() == 0
+        assert np.isnan(test_X).sum() == 0 and np.isnan(test_y).sum() == 0
+
         return train_X, train_y, test_X, test_y
+
 
     @staticmethod
     def load_SMD(home_dir="."):
@@ -248,13 +278,26 @@ class DataFactory:
         train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
         train_y, test_y = train_y.astype(int), test_y.astype(int)
 
+        assert np.isnan(train_X).sum() == 0 and np.isnan(train_y).sum() == 0
+        assert np.isnan(test_X).sum() == 0 and np.isnan(test_y).sum() == 0
+
         return train_X, train_y, test_X, test_y
+
 
     @staticmethod
     def load_PSM(home_dir="."):
         PSM_PATH = os.path.join(home_dir, "data", "PSM")
+
         df_train_X = pd.read_csv(os.path.join(PSM_PATH, "train.csv"), index_col=0)
+        df_train_X.fillna(method='ffill', inplace=True)
+        df_train_X.fillna(method='bfill', inplace=True)
+        df_train_X.dropna(axis='columns', inplace=True)  # drop null columns
+
         df_test_X = pd.read_csv(os.path.join(PSM_PATH, "test.csv"), index_col=0)
+        df_test_X.fillna(method='ffill', inplace=True)
+        df_test_X.fillna(method='bfill', inplace=True)
+        df_test_X.dropna(axis='columns', inplace=True)  # drop null columns
+
         train_X = df_train_X.values.astype(np.float32)
         test_X = df_test_X.values.astype(np.float32)
         T, C = train_X.shape
@@ -265,7 +308,11 @@ class DataFactory:
         train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
         train_y, test_y = train_y.astype(int), test_y.astype(int)
 
+        assert np.isnan(train_X).sum() == 0 and np.isnan(train_y).sum() == 0
+        assert np.isnan(test_X).sum() == 0 and np.isnan(test_y).sum() == 0
+
         return train_X, train_y, test_X, test_y
+
 
     @staticmethod
     def load_SMAP(home_dir="."):
@@ -282,7 +329,11 @@ class DataFactory:
         train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
         train_y, test_y = train_y.astype(int), test_y.astype(int)
 
+        assert np.isnan(train_X).sum() == 0 and np.isnan(train_y).sum() == 0
+        assert np.isnan(test_X).sum() == 0 and np.isnan(test_y).sum() == 0
+
         return train_X, train_y, test_X, test_y
+
 
     @staticmethod
     def load_MSL(home_dir="."):
@@ -298,11 +349,17 @@ class DataFactory:
 
         train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
         train_y, test_y = train_y.astype(int), test_y.astype(int)
+
+        assert np.isnan(train_X).sum() == 0 and np.isnan(train_y).sum() == 0
+        assert np.isnan(test_X).sum() == 0 and np.isnan(test_y).sum() == 0
+
         return train_X, train_y, test_X, test_y
+
 
     @staticmethod
     def visualize_dataset(train_X, train_y, test_X, test_y, dataset_name, feature_idx):
         '''
+        visualize the trajectory of certain feature.
         :param dataset_name
         :param feature_idx
         '''
@@ -345,8 +402,10 @@ class TSADStandardDataset(Dataset):
         self.x = self.transform.fit_transform(x) if flag == "train" else self.transform.transform(x)
         self.y = y
 
+
     def __len__(self):
         return self.len
+
 
     def __getitem__(self, idx):
         _idx = idx * self.stride

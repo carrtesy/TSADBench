@@ -15,6 +15,7 @@ class LOF_Trainer(SklearnModelTrainer):
             n_jobs=self.args.model.n_jobs,
         )
 
+
 class IsolationForest_Trainer(SklearnModelTrainer):
     def __init__(self, args, logger, train_loader, test_loader):
         super(IsolationForest_Trainer, self).__init__(args, logger, train_loader, test_loader)
@@ -25,6 +26,7 @@ class IsolationForest_Trainer(SklearnModelTrainer):
             random_state=self.args.model.random_state,
             verbose=self.args.model.verbose,
         )
+
 
 class OCSVM_Trainer(SklearnModelTrainer):
     def __init__(self, args, logger, train_loader, test_loader):
