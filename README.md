@@ -3,10 +3,23 @@
 This repository contains Time-Series Anomaly Detection datasets, models, and their implementations.
 
 ## QuickRun
+For individual run, 
 ```bash
 python main.py dataset=${dataset_name} model={model_name} {{other arguments}}
 python main.py dataset=NeurIPS-TS-MUL model=USAD exp_id=default model.latent_dim=40 # example
 ```
+If you want to run the model for various dataset,
+```bash
+sh data_loop.sh ${model_name} ${gpu_id}
+sh data_loop.sh AnomalyTransformer 1 # example
+```
+
+If you wan to compare models' performace for a specific dataset,
+```bash
+sh model_loop.sh ${data_name} ${gpu_id}
+sh model_loop.sh SWaT 1 # example
+```
+
 for more script running examples, 
 take a look at [scripts dir](https://github.com/carrtesy/TSADBench/tree/master/scripts).
 
