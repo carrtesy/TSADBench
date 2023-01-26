@@ -1,11 +1,13 @@
+# configuration from:
+# https://github.com/thuml/Anomaly-Transformer/blob/main/scripts/PSM.sh
 export CUDA_VISIBLE_DEVICES=$1
 python main.py \
-dataset=NeurIPS-TS-MUL \
+dataset=PSM \
 exp_id=default \
-epochs=5 \
+epochs=3 \
 batch_size=256 \
 eval_batch_size=256 \
-window_size=25 \
-stride=25 \
+window_size=100 \
+stride=100 \
 model=AnomalyTransformer \
 model.anomaly_ratio=1.0
