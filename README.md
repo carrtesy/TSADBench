@@ -10,14 +10,14 @@ python main.py dataset=NeurIPS-TS-MUL model=USAD exp_id=default model.latent_dim
 ```
 If you want to run the model for various dataset,
 ```bash
-sh data_loop.sh ${model_name} ${gpu_id}
-sh data_loop.sh AnomalyTransformer 1 # example
+sh scripts/data_loop.sh ${model_name} ${gpu_id}
+sh scripts/data_loop.sh AnomalyTransformer 1 # example
 ```
 
 If you wan to compare models' performace for a specific dataset,
 ```bash
-sh model_loop.sh ${data_name} ${gpu_id}
-sh model_loop.sh SWaT 1 # example
+sh scripts/model_loop.sh ${data_name} ${gpu_id}
+sh scripts/model_loop.sh SWaT 1 # example
 ```
 
 for more script running examples, 
