@@ -14,10 +14,10 @@ sh scripts/data_loop.sh ${model_name} ${gpu_id}
 sh scripts/data_loop.sh AnomalyTransformer 1 # example
 ```
 
-If you wan to compare models' performace for a specific dataset,
+If you want to compare models' performace for a specific dataset,
 ```bash
 sh scripts/model_loop.sh ${data_name} ${gpu_id}
-sh scripts/model_loop.sh SWaT 1 # example
+sh scripts/model_loop.sh SWaT 3 # example
 ```
 
 for more script running examples, 
