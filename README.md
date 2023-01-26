@@ -35,7 +35,7 @@ For hyperparameter tuning examples, take a look at [hptune dir](https://github.c
 
 ## Dataset preparation
 
-For list of dataset details, please refer to our [notion dataset page](https://carrtesy.notion.site/79cb1d595ec746a3a4c8371cedb2c608?v=440fdfeea2dc489d806e72b85d3d4da6). 
+For list of dataset details, please refer to our [notion dataset page](https://carrtesy.notion.site/79cb1d595ec746a3a4c8371cedb2c608?v=440fdfeea2dc489d806e72b85d3d4da6). You may also take a look at [EDA dir](https://github.com/carrtesy/TSADBench/tree/master/EDA) for exploratory data analysis.
 
 All datasets are assumed to be in "data" folder. 
 
