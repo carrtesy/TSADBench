@@ -61,7 +61,7 @@ def main(cfg: DictConfig) -> None:
     logger.info(f"Preparing {args.dataset} dataset...")
     datafactory = DataFactory(args, logger)
     train_dataset, train_loader, test_dataset, test_loader = datafactory()
-    args.num_channels = train_dataset.x.shape[1]
+    args.num_channels = train_dataset.X.shape[1]
 
     # Model
     logger.info(f"Preparing {args.model.name} Trainer...")

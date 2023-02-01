@@ -98,7 +98,6 @@ class DataFactory:
                 train_shuffle,
                 test_shuffle,
                 scaler,
-                window_anomaly,
                 ):
 
         transform = self.transforms[scaler]
