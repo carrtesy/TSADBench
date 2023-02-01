@@ -9,9 +9,6 @@ window_size: 12
 stride: 1
 scaler: std
 
-# Problem Scheme
-window_anomaly: False
-
 # Training Hyperparameters
 lr: 1e-03
 epochs: 30

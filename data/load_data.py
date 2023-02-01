@@ -47,19 +47,19 @@ class DataFactory:
     def __call__(self):
         # prepare data
         self.logger.info(f"Preparing {self.args.dataset} ...")
-        train_x, train_y, test_x, test_y = self.load()
+        train_X, train_y, test_X, test_y = self.load()
         self.logger.info(
-            f"train: X - {train_x.shape}, y - {train_y.shape} " +
-            f"test: X - {test_x.shape}, y - {test_y.shape}"
+            f"train: X - {train_X.shape}, y - {train_y.shape} " +
+            f"test: X - {test_X.shape}, y - {test_y.shape}"
         )
-        assert np.isnan(train_x).sum() == 0 and np.isnan(train_y).sum() == 0
-        assert np.isnan(test_x).sum() == 0 and np.isnan(test_y).sum() == 0
+        assert np.isnan(train_X).sum() == 0 and np.isnan(train_y).sum() == 0
+        assert np.isnan(test_X).sum() == 0 and np.isnan(test_y).sum() == 0
         self.logger.info(f"Complete.")
 
         # dataloader, dataset
         self.logger.info(f"Preparing dataloader...")
         train_dataset, train_loader, test_dataset, test_loader = self.prepare(
-            train_x, train_y, test_x, test_y,
+            train_X, train_y, test_X, test_y,
             window_size=self.args.window_size,
             stride=self.args.stride,
             dataset_type=self.args.dataset,
@@ -68,7 +68,6 @@ class DataFactory:
             train_shuffle=True,
             test_shuffle=False,
             scaler=self.args.scaler,
-            window_anomaly=self.args.window_anomaly
         )
 
         # shape in batch
@@ -90,7 +89,7 @@ class DataFactory:
         return self.dataset_fn_dict[self.args.dataset](self.home_dir)
 
 
-    def prepare(self, train_x, train_y, test_x, test_y,
+    def prepare(self, train_X, train_y, test_X, test_y,
                 window_size,
                 stride,
                 dataset_type,
@@ -104,11 +103,10 @@ class DataFactory:
 
         transform = self.transforms[scaler]
         train_dataset = self.datasets[dataset_type](
-            train_x, train_y,
+            train_X, train_y,
             flag="train", transform=transform,
             window_size=window_size,
             stride=stride,
-            window_anomaly=window_anomaly,
         )
         train_dataloader = DataLoader(
             dataset=train_dataset,
@@ -118,18 +116,16 @@ class DataFactory:
 
         transform = train_dataset.transform
         test_dataset = self.datasets[dataset_type](
-            test_x, test_y,
+            test_X, test_y,
             flag="test", transform=transform,
             window_size=window_size,
             stride=stride,
-            window_anomaly=window_anomaly,
         )
         test_dataloader = DataLoader(
             dataset=test_dataset,
             batch_size=eval_batch_size,
             shuffle=test_shuffle,
         )
-
 
         return train_dataset, train_dataloader, test_dataset, test_dataloader
 
@@ -207,9 +203,9 @@ class DataFactory:
             df.reset_index(drop=True, inplace=True)
             df.fillna(method='ffill', inplace=True)
 
-            x = df.values[:, :-1].astype(np.float32)
+            X = df.values[:, :-1].astype(np.float32)
             y = (df['Normal/Attack'] == 'Attack').to_numpy().astype(int)
-            return x, y
+            return X, y
 
         train_X, train_y = process_df(df_train)
         test_X, test_y = process_df(df_test)
@@ -390,16 +386,15 @@ class DataFactory:
 
 
 class TSADStandardDataset(Dataset):
-    def __init__(self, x, y, flag, transform, window_size, stride, window_anomaly):
+    def __init__(self, X, y, flag, transform, window_size, stride):
         super().__init__()
         self.transform = transform
-        self.len = (x.shape[0] - window_size) // stride + 1
+        self.len = (X.shape[0] - window_size) // stride + 1
         self.window_size = window_size
         self.stride = stride
-        self.window_anomaly = window_anomaly
 
-        x, y = x[:self.len*self.window_size], y[:self.len*self.window_size]
-        self.x = self.transform.fit_transform(x) if flag == "train" else self.transform.transform(x)
+        X, y = X[:self.len*self.window_size], y[:self.len*self.window_size]
+        self.X = self.transform.fit_transform(X) if flag == "train" else self.transform.transform(X)
         self.y = y
 
 
@@ -409,8 +404,7 @@ class TSADStandardDataset(Dataset):
 
     def __getitem__(self, idx):
         _idx = idx * self.stride
-        label = self.y[_idx:_idx+self.window_size]
-        X, y = self.x[_idx:_idx+self.window_size], (1 in label) if self.window_anomaly else label
+        X, y = self.X[_idx:_idx+self.window_size], self.y[_idx:_idx+self.window_size]
         return X, y
 
 if __name__ == "__main__":
