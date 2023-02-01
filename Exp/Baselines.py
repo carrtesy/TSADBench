@@ -396,7 +396,7 @@ class DeepSVDD_Trainer(Trainer):
 
 
     def train(self):
-        X = self.train_loader.dataset.x
+        X = self.train_loader.dataset.X
         self.logger.info(f"training {self.args.model.name}")
         self.model.fit(X)
         self.logger.info(f"training complete.")
@@ -405,7 +405,7 @@ class DeepSVDD_Trainer(Trainer):
 
     def infer(self):
         result = {}
-        X, gt = self.test_loader.dataset.x, self.test_loader.dataset.y
+        X, gt = self.test_loader.dataset.X, self.test_loader.dataset.y
 
         pred = self.model.predict(X)
 

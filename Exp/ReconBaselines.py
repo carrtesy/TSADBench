@@ -9,17 +9,11 @@ from models.LSTMVAE import LSTMVAE
 from models.USAD import USAD
 from models.OmniAnomaly import OmniAnomaly
 
-# utils
-import os
-
 # others
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-
 from tqdm import tqdm
-import pickle
 
 
 class LSTMEncDec_Trainer(ReconModelTrainer):
@@ -36,6 +30,7 @@ class LSTMEncDec_Trainer(ReconModelTrainer):
 
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.args.lr)
 
+
     def _process_batch(self, batch_data):
         X = batch_data[0].to(self.args.device)
         B, L, C = X.shape
@@ -51,6 +46,7 @@ class LSTMEncDec_Trainer(ReconModelTrainer):
             "summary": loss.item(),
         }
         return out
+
 
     def calculate_anomaly_scores(self):
         # get train statistics.
@@ -92,6 +88,8 @@ class LSTMEncDec_Trainer(ReconModelTrainer):
         recon_errors = np.concatenate(recon_errors, axis=0)
         return recon_errors
 
+
+
 class LSTMVAE_Trainer(ReconModelTrainer):
     def __init__(self, args, logger, train_loader, test_loader):
         super(LSTMVAE_Trainer, self).__init__(args=args, logger=logger, train_loader=train_loader, test_loader=test_loader)
@@ -103,14 +101,15 @@ class LSTMVAE_Trainer(ReconModelTrainer):
         ).to(self.args.device)
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.args.lr)
 
+
     @staticmethod
     def gaussian_prior_KLD(mu, logvar):
         return -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
 
+
     def _process_batch(self, batch_data) -> dict:
         X = batch_data[0].to(self.args.device)
         B, L, C = X.shape
-
         Xhat, mu, logvar = self.model(X)
 
         self.optimizer.zero_grad()
@@ -127,6 +126,7 @@ class LSTMVAE_Trainer(ReconModelTrainer):
             "summary": loss.item(),
         }
         return out
+
 
     def calculate_recon_errors(self):
         eval_iterator = tqdm(
@@ -145,6 +145,8 @@ class LSTMVAE_Trainer(ReconModelTrainer):
             recon_errors.append(recon_error)
         recon_errors = np.concatenate(recon_errors, axis=0)
         return recon_errors
+
+
 
 class USAD_Trainer(ReconModelTrainer):
     def __init__(self, args, logger, train_loader, test_loader):
@@ -168,6 +170,7 @@ class USAD_Trainer(ReconModelTrainer):
         self.optimizer2 = torch.optim.Adam(params=self.model.parameters(), lr=args.lr)
         self.epoch = 0
 
+
     def train_epoch(self):
         self.model.train()
         log_freq = len(self.train_loader) // self.args.log_freq
@@ -181,6 +184,7 @@ class USAD_Trainer(ReconModelTrainer):
         train_summary /= len(self.train_loader)
         self.epoch += 1
         return train_summary
+
 
     def _process_batch(self, batch_data, epoch) -> dict:
         X = batch_data[0].to(self.args.device)
@@ -217,6 +221,7 @@ class USAD_Trainer(ReconModelTrainer):
         }
         return out
 
+
     def calculate_recon_errors(self):
         '''
         :return:  returns (B, L, C) recon loss tensor
@@ -235,6 +240,7 @@ class USAD_Trainer(ReconModelTrainer):
         recon_errors = np.concatenate(recon_errors, axis=0)
         return recon_errors
 
+
     def recon_error_criterion(self, Wt, alpha=0.5, beta=0.5):
         '''
         :param Wt: model input
@@ -247,6 +253,8 @@ class USAD_Trainer(ReconModelTrainer):
         Wt1p = self.model.decoder1(z).reshape(B, L, C)
         Wt2dp = self.model.decoder2(self.model.encoder(Wt1p.reshape(B, L*C))).reshape(B, L, C)
         return alpha * F.mse_loss(Wt, Wt1p, reduction='none') + beta * F.mse_loss(Wt, Wt2dp, reduction='none')
+
+
 
 class OmniAnomaly_Trainer(ReconModelTrainer):
     def __init__(self, args, logger, train_loader, test_loader):
@@ -264,9 +272,11 @@ class OmniAnomaly_Trainer(ReconModelTrainer):
         self.beta = 0
         self.iter = 0
 
+
     @staticmethod
     def gaussian_prior_KLD(mu, logvar):
         return -0.5 * torch.sum(1+logvar-mu.pow(2)-logvar.exp())
+
 
     def _process_batch(self, batch_data) -> dict:
         X = batch_data[0].to(self.args.device)
@@ -290,6 +300,7 @@ class OmniAnomaly_Trainer(ReconModelTrainer):
             "summary": loss.item(),
         }
         return out
+
 
     def calculate_recon_errors(self):
         '''
