@@ -121,35 +121,22 @@ class Trainer:
 
 
     @staticmethod
-    def reduce(anomaly_scores, stride=1, mode="mean", window_anomaly=False):
+    def reduce(anomaly_scores, stride=1, mode="all"):
         '''
         :param anomaly_scores
         :param stride
-        :param mode: how to reduce
+        :param mode: how to reduce (all: (T, ), except_channel: (T, C))
         :return: (B,) tensor that indicates anomaly score of each point
         '''
         B, L, C = anomaly_scores.shape
 
-        if window_anomaly:
-            if mode=="mean":
-                out = anomaly_scores.mean(axis=(-1, -2)) # (B, L, C) => (B,)
-            elif mode=="max":
-                out = anomaly_scores.max(axis=(-1, -2))  # (B, L, C) => (B,)
-        else:
-            T = (B-1)*stride+L
-            out = np.zeros((T, L))
-            if mode=="mean":
-                x = anomaly_scores.mean(axis=-1) # (B, L, C) => (B, L)
-                for i in range(L):
-                    out[i*stride: i*stride+B, i] = x[:, i]
-                out = np.true_divide(out.sum(axis=1), (out!=0).sum(axis=1)) # get mean except 0
-            elif mode=="max":
-                x = anomaly_scores.max(axis=-1)  # (B, L, C) => (B, L)
-                for i in range(L):
-                    out[i*stride: i*stride+B, i] = x[:, i]
-                out = out.max(axis=-1)
-            else:
-                raise NotImplementedError
+        T = (B-1)*stride+L
+        out = np.zeros((T, L, C))
+        for i in range(L):
+            out[i*stride: i*stride+B, i] = anomaly_scores[:, i]
+        out = np.true_divide(out.sum(axis=1), (out!=0).sum(axis=1)) # get mean except 0
+        if mode == "all":
+            out = out.mean(axis=-1)  # (T, C) => (T, )
         return out
 
 

@@ -53,41 +53,38 @@ class LSTMEncDec_Trainer(ReconModelTrainer):
         return out
 
     def calculate_anomaly_scores(self):
-        recon_errors = self.calculate_recon_errors() # (B, L, C)
-        B, L, C = recon_errors.shape
-        x = self.reduce(recon_errors) # (T, C)
-        mu, cov = np.mean(x, axis=0), np.cov(x.T)
-        e = np.expand_dims(x-mu, axis=2) # (T, C, 1)
-        invcov = np.linalg.pinv(cov) if C > 1 else np.array([[1/cov]])
-        anomaly_scores = np.transpose(e, (0, 2, 1)) @ invcov @ e # (T, 1, 1)
-        anomaly_scores = anomaly_scores.reshape(-1)
+        # get train statistics.
+        train_recon_errors = self.calculate_recon_errors(dataloader=self.train_loader) # (B, L, C)
+        train_recon_errors = self.reduce(train_recon_errors, mode="except_channel") # (T_train, C)
+        train_error_mu, train_error_cov = np.mean(train_recon_errors, axis=0), np.cov(train_recon_errors.T)
+
+        # test statistics
+        test_recon_errors = self.calculate_recon_errors(dataloader=self.test_loader)
+        B, L, C = test_recon_errors.shape
+        test_recon_errors = self.reduce(test_recon_errors, mode="except_channel") # (T_test, C)
+
+        # anomaly scores
+        r = test_recon_errors - train_error_mu # e-mu, (T, C)
+        ic = np.linalg.pinv(train_error_cov) if C > 1 else np.array([[train_error_cov]]) # inverse of covariance matrix, (C, C)
+        anomaly_scores = np.einsum("TC,CC,TC->T", r, ic, r)
         return anomaly_scores
 
-    @staticmethod
-    def reduce(anomaly_scores, stride=1):
-        B, L, C = anomaly_scores.shape
-        T = (B-1)*stride+L
-        out = np.zeros((T, L, C))
-        for i in range(L):
-            out[i*stride:i*stride+B, i]=anomaly_scores[:,i]
-        out = np.true_divide(out.sum(axis=1), (out!=0).sum(axis=1))
-        return out
 
     @torch.no_grad()
-    def calculate_recon_errors(self):
+    def calculate_recon_errors(self, dataloader):
         '''
-        :param dataloader: eval dataloader
+        :param dataloader (self.train or self.test)
         :return:  returns (B, L, C) recon loss tensor
         '''
         self.model.eval()
-        eval_iterator = tqdm(
-            self.test_loader,
-            total=len(self.test_loader),
+        iterator = tqdm(
+            dataloader,
+            total=len(dataloader),
             desc="calculating reconstruction errors",
             leave=True
         )
         recon_errors = []
-        for i, batch_data in enumerate(eval_iterator):
+        for i, batch_data in enumerate(iterator):
             X = batch_data[0].to(self.args.device)
             Xhat = self.model(X)
             recon_error = F.mse_loss(Xhat, X, reduction='none').to("cpu")
