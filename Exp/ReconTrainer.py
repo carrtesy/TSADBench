@@ -54,6 +54,7 @@ class ReconModelTrainer(Trainer):
         train_summary /= len(self.train_loader)
         return train_summary
 
+    @torch.no_grad()
     def calculate_anomaly_scores(self):
         recon_errors = self.calculate_recon_errors()
         anomaly_scores = self.reduce(recon_errors)

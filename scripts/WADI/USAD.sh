@@ -1,10 +1,10 @@
 export CUDA_VISIBLE_DEVICES=$1
 python main.py \
-dataset=SMD \
-exp_id=default \
+dataset=WADI \
 scaler=minmax \
-window_size=5 \
-epochs=250 \
+exp_id=default \
+window_size=10 \
+epochs=70 \
 model=USAD \
 model.dsr=5 \
-model.latent_dim=38
+model.latent_dim=100

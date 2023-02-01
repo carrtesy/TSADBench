@@ -6,6 +6,7 @@ dataset=MSL \
 epochs=3 \
 batch_size=256 \
 window_size=100 \
+stride=100 \
 exp_id=default \
 model=AnomalyTransformer \
 model.anomaly_ratio=1.0
