@@ -1,6 +1,9 @@
 # TSADBench
-
 This repository contains Time-Series Anomaly Detection datasets, models, and their implementations.
+
+## Experiments So Far
+"*0.*" denotes that experiment hasn't finished. 
+![exp_table_recent](./exp_table/20230202.PNG)
 
 ## QuickRun
 For individual run, 
