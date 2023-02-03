@@ -39,11 +39,14 @@ from Exp.SklearnBaselines import *
 from Exp.ReconBaselines import *
 from Exp.Baselines import *
 
-SEED_everything(42)
+
 warnings.filterwarnings("ignore")
 
 @hydra.main(version_base=None, config_path="cfgs", config_name="defaults")
 def main(cfg: DictConfig) -> None:
+    # SEED
+    SEED_everything(2023)
+
     # prepare arguments
     args = prepare_arguments(cfg)
 

@@ -3,7 +3,7 @@ This repository contains Time-Series Anomaly Detection datasets, models, and the
 
 ## Experiments So Far
 "*0.*" denotes that experiment hasn't finished. 
-![exp_table_recent](./exp_table/20230202.PNG)
+![exp_table_recent](./exp_table/20230203.PNG)
 
 ## QuickRun
 For individual run, 
