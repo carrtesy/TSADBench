@@ -5,8 +5,11 @@ This repository contains Time-Series Anomaly Detection datasets, models, and the
 If you find any issues for this repository, such as errors in code, better hyperparameters, etc, please report through Issue channel or via pull request.
 
 ## Experiments So Far
+
+[20230522: deleted SMD, SMAP, MSL] There seems to be problem in datasets (SMD, SMAP, MSL) preprocessing, so let me update for these datasets later.
+
 "*0.*" denotes that experiment hasn't finished. 
-![exp_table_recent](./exp_table/20230203.PNG)
+![exp_table_recent](./exp_table/20230522.PNG)
 
 ## QuickRun
 For individual run, 
@@ -70,15 +73,18 @@ Request via guidelines in the [link](https://itrust.sutd.edu.sg/itrust-labs_data
 - For Normal Dataset, refer to ./WADI_14days_new.csv
 - For Attack Dataset, refer to ./WADI_attackdataLABLE.csv
 
-SMD, PSM, SMAP, MSL are provided in https://github.com/thuml/Anomaly-Transformer.
 
-6. SMD : Server Machine Dataset
+6. PSM : Pooled Server Metrics Dataset
 
-7. PSM : Pooled Server Metrics Dataset
+<strike>SMD, SMAP, MSL are provided in https://github.com/thuml/Anomaly-Transformer.</strike>
 
-8. SMAP : Soil Moisture Active Passive satellite Dataset
+<strike>7. SMD : Server Machine Dataset</strike>
+ 
+<strike>8. SMAP : Soil Moisture Active Passive satellite Dataset</strike>
 
-9. MSL : Mars Science Laboratory Dataset
+<strike>9. MSL : Mars Science Laboratory Dataset</strike>
+
+There seems to be problem in datasets (SMD, SMAP, MSL) preprocessing, so let me update for this dataset later.
 
 10. To be updated
 
